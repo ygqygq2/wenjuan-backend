@@ -1,0 +1,18 @@
+export enum ConfigEnum {
+  DB_TYPE = 'DB_TYPE',
+  DB_HOST = 'DB_HOST',
+  DB_PORT = 'DB_PORT',
+  DB_USERNAME = 'DB_USERNAME',
+  DB_PASSWORD = 'DB_PASSWORD',
+  DB_DATABASE = 'DB_DATABASE',
+  DB_SYNC = 'DB_SYNC',
+  DB_LOGGING = 'DB_LOGGING',
+  JWT_SECRET = 'JWT_SECRET',
+  JWT_EXPIRES_IN = 'JWT_EXPIRES_IN',
+}
+
+export enum LogEnum {
+  LOG_ON = 'LOG_ON',
+  LOG_LEVEL = 'LOG_LEVEL',
+  TIMESTAMP = 'TIMESTAMP',
+}
