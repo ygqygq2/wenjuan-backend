@@ -10,6 +10,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { LogsModule } from './logs/logs.module';
+import { QuestionController } from './question/question.controller';
+import { QuestionModule } from './question/question.module';
+import { QuestionService } from './question/question.service';
 import { RolesModule } from './roles/roles.module';
 import { UserModule } from './user/user.module';
 
@@ -41,9 +44,10 @@ const envFilePath = `.env.${process.env.NODE_ENV || 'development'}`;
     LogsModule,
     RolesModule,
     AuthModule,
+    QuestionModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, Logger],
+  controllers: [AppController, QuestionController],
+  providers: [AppService, Logger, QuestionService],
   exports: [Logger],
 })
 export class AppModule {}
