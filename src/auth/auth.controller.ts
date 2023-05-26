@@ -21,17 +21,19 @@ export class AuthController {
     return 'Auth';
   }
 
-  @Post('/signin')
+  @Post('/login')
   async signin(@Body() dto: SigninUserDto) {
     const { username, password } = dto;
     const token = await this.authService.signin(username, password);
     return {
-      access_token: token,
+      errno: 0,
+      data: {
+        token,
+      },
     };
-    // return this.authService.signin(username, password);
   }
 
-  @Post('/signup')
+  @Post('/logout')
   signup(@Body() dto: SigninUserDto) {
     const { username, password } = dto;
     return this.authService.signup(username, password);
