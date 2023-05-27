@@ -80,13 +80,26 @@ export class UserController {
   // 不超过 3 个参数，建议直接使用类型管道
   @Get('/profile')
   @UseGuards(AuthGuard('jwt'))
-  getUserProfile(
+  async getUserProfile(
     @Query('id', ParseIntPipe) id: any,
     // 这里 req 中的 user 是通过 AuthGuard('jwt') 中的 validate 方法返回的 PassportModule 来添加的
     // @Req() req
-  ): any {
+  ): Promise<any> {
     // console.log('🚀 ~ file: user.controller.ts:84~ UserController~ getUserProfile~ Req', req.user);
-    return this.userService.findProfile(id);
+    const result = await this.userService.findProfile(id);
+    let data = {};
+    if (result.id) {
+      data = {
+        errno: 0,
+        data: result,
+      };
+    } else {
+      data = {
+        errno: 100,
+        message: '用户不存在',
+      };
+    }
+    return data;
   }
 
   @Get('/logs')

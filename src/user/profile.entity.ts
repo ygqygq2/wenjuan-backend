@@ -8,6 +8,9 @@ export class Profile {
   id: number;
 
   @Column()
+  nickname: string;
+
+  @Column()
   gender: number;
 
   @Column()

@@ -16,7 +16,7 @@ export class AuthService {
       return this.jwt.signAsync(
         {
           username: user.username,
-          sub: user.id,
+          user_id: user.id,
         },
         // 局部设置过期时间
         // {
