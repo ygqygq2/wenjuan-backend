@@ -1,11 +1,14 @@
+import { Expose } from 'class-transformer';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
-export class Logs {
+export class Question {
   @PrimaryGeneratedColumn()
+  @Expose()
   id: number;
 
   @Column()
+  @Expose()
   title: string;
 
   @Column()
