@@ -1,5 +1,7 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+
+import { Component } from './component.entity';
 
 @Entity()
 export class Question {
@@ -26,6 +28,6 @@ export class Question {
   @Column()
   isPublished: boolean;
 
-  @Column()
-  componentList: string;
+  @OneToMany(() => Component, (component) => component.question, { cascade: true })
+  componentList: Component[];
 }
