@@ -1,5 +1,6 @@
 import { Body, ClassSerializerInterceptor, Controller, Get, Post, UseFilters, UseInterceptors } from '@nestjs/common';
 
+import { Public } from '@/decorators/auth.decorator';
 import { TypeormFilter } from '@/filters/typeorm.filter';
 
 import { AuthService } from './auth.service';
@@ -16,11 +17,13 @@ import { SigninUserDto } from './dto/signin-user.dto';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Public()
   @Get()
   getHello(): string {
     return 'Auth';
   }
 
+  @Public()
   @Post('/login')
   async signin(@Body() dto: SigninUserDto) {
     const { username, password } = dto;

@@ -6,17 +6,17 @@ import { UserService } from '../user/user.service';
 
 @Injectable()
 export class AuthService {
-  constructor(private userService: UserService, private jwt: JwtService) {}
+  constructor(private userService: UserService, private jwtService: JwtService) {}
 
   async signin(username: string, password: string) {
     // const res= await this.userService.findAll({ username} as GetUserDto);
     const user = await this.userService.find(username);
     if (user && user.password === password) {
       // 生成 token
-      return this.jwt.signAsync(
+      return this.jwtService.signAsync(
         {
           username: user.username,
-          user_id: user.id,
+          sub: user.id,
         },
         // 局部设置过期时间
         // {

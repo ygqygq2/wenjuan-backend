@@ -1,6 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-
-import { AuthGuard } from '@nestjs/passport';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -11,7 +9,6 @@ export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
 
   @Post()
-  @UseGuards(AuthGuard('jwt'))
   // 返回数据库最新 id，格式如下
   async index(@Body() body: any) {
     // getNewestId
@@ -27,19 +24,16 @@ export class QuestionController {
   }
 
   @Get()
-  @UseGuards(AuthGuard('jwt'))
   findAll() {
     return this.questionService.findAll();
   }
 
   @Get(':id')
-  @UseGuards(AuthGuard('jwt'))
   findOne(@Param('id') id: string) {
     return this.questionService.findOne(+id);
   }
 
   @Post('id')
-  @UseGuards(AuthGuard('jwt'))
   create(@Body() createQuestionDto: CreateQuestionDto) {
     return this.questionService.create(createQuestionDto);
   }
