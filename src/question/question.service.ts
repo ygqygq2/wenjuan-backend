@@ -1,19 +1,37 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
+import { Component } from './component.entity';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { Question } from './question.entity';
 
 @Injectable()
 export class QuestionService {
-  constructor(@InjectRepository(Question) private questionRepository: Repository<Question>) {}
+  constructor(
+    @InjectRepository(Question) private questionRepository: Repository<Question>,
+    @InjectRepository(Component) private componentRepository: Repository<Component>,
+  ) {}
 
-  async create(createQuestionDto: CreateQuestionDto) {
-    const question = this.questionRepository.create(createQuestionDto);
-    return this.questionRepository.save(question);
+  async create(question: CreateQuestionDto) {
+    console.log(question);
+    // if (!question.componentList) {
+    // const component= await this.componentRepository.findOne({ where: { fe_id: 2} });
+    // question.componentList= [component];
+    // }
+    if (question.componentList instanceof Array && typeof question.componentList[0] === 'number') {
+      // 查询所有的用户角色
+      question.componentList = await this.componentRepository.find({
+        where: {
+          fe_id: In(question.componentList),
+        },
+      });
+    }
+    const questionTmp = this.questionRepository.create(question);
+    const res = await this.questionRepository.save(questionTmp);
+    return res;
   }
 
   findAll() {

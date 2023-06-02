@@ -13,7 +13,6 @@ export class QuestionController {
   async index(@Body() body: any) {
     // getNewestId
     const id = await this.questionService.getNewestId();
-    console.log(id);
     // 返回 id 加 1
     return {
       errno: 0,
