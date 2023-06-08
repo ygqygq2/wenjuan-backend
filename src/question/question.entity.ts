@@ -14,7 +14,7 @@ export class Question {
   title: string;
 
   @Column()
-  desc: string;
+  description: string;
 
   @Column()
   js: string;
@@ -22,12 +22,13 @@ export class Question {
   @Column()
   css: string;
 
-  @Column()
+  @Column({ default: false })
   isDeleted: boolean;
 
-  @Column()
+  @Column({ default: false })
   isPublished: boolean;
 
+  // 一对多，一个问题对应多个组件，字段保存组件的 fe_id 列表
   @OneToMany(() => Component, (component) => component.question, { cascade: true })
   componentList: Component[];
 }

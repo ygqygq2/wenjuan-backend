@@ -1,6 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 
-import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionService } from './question.service';
 
@@ -8,6 +7,7 @@ import { QuestionService } from './question.service';
 export class QuestionController {
   constructor(private readonly questionService: QuestionService) {}
 
+  // 没有 question id 时
   @Post()
   // 返回数据库最新 id，格式如下
   async index(@Body() body: any) {
@@ -32,14 +32,15 @@ export class QuestionController {
     return this.questionService.findOne(+id);
   }
 
-  @Post('id')
-  create(@Body() createQuestionDto: CreateQuestionDto) {
-    return this.questionService.create(createQuestionDto);
-  }
+  // // 有 question id 时
+  // @Post('id')
+  // async createQuestionAndComponent(@Body() updateQuestionDto: UpdateQuestionDto) {
+  //   await this.questionService.saveQuestion(updateQuestionDto);
+  // }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateQuestionDto: UpdateQuestionDto) {
-    return this.questionService.update(+id, updateQuestionDto);
+    return this.questionService.saveQuestion(+id, updateQuestionDto);
   }
 
   @Delete(':id')

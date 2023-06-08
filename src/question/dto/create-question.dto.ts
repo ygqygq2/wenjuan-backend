@@ -8,7 +8,7 @@ export class CreateQuestionDto {
   title: string;
 
   @IsString()
-  desc?: string;
+  description?: string;
 
   @IsString()
   css?: string;

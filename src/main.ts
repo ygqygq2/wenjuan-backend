@@ -1,12 +1,12 @@
-import { Logger, ValidationPipe } from '@nestjs/common';
-import { HttpAdapterHost, NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
 import { getServerConfig } from '../ormconfig';
 
 import { AppModule } from './app.module';
-import { AllExceptionFilter } from './filters/all-exception.filter';
+// import{ AllExceptionFilter} from './filters/all-exception.filter';
 
 async function bootstrap() {
   const config = getServerConfig();
@@ -23,9 +23,9 @@ async function bootstrap() {
 
   // 全局使用过滤器
   // 全局过滤器只能有一个
-  const httpAdapter = app.get(HttpAdapterHost);
-  const logger = new Logger();
-  app.useGlobalFilters(new AllExceptionFilter(logger, httpAdapter));
+  // const httpAdapter= app.get(HttpAdapterHost);
+  // const logger= new Logger();
+  // app.useGlobalFilters(new AllExceptionFilter(logger, httpAdapter));
 
   // 全局拦截器
   app.useGlobalPipes(
