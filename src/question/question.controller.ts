@@ -22,8 +22,9 @@ export class QuestionController {
     };
   }
 
+  // 查询问卷列表，根据接收到的参数查询，len, isDeleted, isStar
   @Get()
-  findAll() {
+  findAll(@Param('len') len: number, @Param('isDeleted') isDeleted: boolean, @Param('isStar') isStar: boolean) {
     return this.questionService.findAll();
   }
 
@@ -32,12 +33,7 @@ export class QuestionController {
     return this.questionService.findOne(+id);
   }
 
-  // // 有 question id 时
-  // @Post('id')
-  // async createQuestionAndComponent(@Body() updateQuestionDto: UpdateQuestionDto) {
-  //   await this.questionService.saveQuestion(updateQuestionDto);
-  // }
-
+  // 更新问卷
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateQuestionDto: UpdateQuestionDto) {
     return this.questionService.saveQuestion(+id, updateQuestionDto);

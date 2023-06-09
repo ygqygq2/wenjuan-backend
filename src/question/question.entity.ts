@@ -1,34 +1,51 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-
-import { Component } from './component.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Question {
-  @PrimaryGeneratedColumn()
+  // 为了避免前端使用关键字 id 可能产生问题，这里使用列名 _id
+  @PrimaryGeneratedColumn({ name: '_id' })
   @Expose()
   id: number;
 
+  // 问卷标题
   @Column()
   @Expose()
   title: string;
 
+  // 问卷描述
   @Column()
   description: string;
 
+  // 问卷自定义 js 脚本
   @Column()
   js: string;
 
+  // 问卷自定义样式
   @Column()
   css: string;
 
+  // 是否已删除
   @Column({ default: false })
   isDeleted: boolean;
 
+  // 是否已发布
   @Column({ default: false })
   isPublished: boolean;
 
-  // 一对多，一个问题对应多个组件，字段保存组件的 fe_id 列表
-  @OneToMany(() => Component, (component) => component.question, { cascade: true })
-  componentList: Component[];
+  // 组件列表
+  @Column()
+  componentList: string;
+
+  // 创建时间，自动使用数据库插入时间
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  createdAt: Date;
+
+  // 是否星标
+  @Column()
+  isStar: boolean;
+
+  // 回答数
+  @Column({ default: 0 })
+  answerCount: number;
 }

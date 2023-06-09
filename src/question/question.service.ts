@@ -3,36 +3,18 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
-import { Component } from './component.entity';
-import { CreateComponentDto } from './dto/create-component.dto';
-import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { Question } from './question.entity';
 
 @Injectable()
 export class QuestionService {
-  constructor(
-    @InjectRepository(Question) private readonly questionRepository: Repository<Question>,
-    @InjectRepository(Component) private readonly componentRepository: Repository<Component>,
-  ) {}
+  constructor(@InjectRepository(Question) private readonly questionRepository: Repository<Question>) {}
 
-  async createQuestionAndComponent(
-    createComponentDto: CreateComponentDto,
-    createQuestionDto: CreateQuestionDto,
-  ): Promise<any> {
-    const componentList = [];
-    // 创建组件，返回组件列表
-    const component = this.componentRepository.create(createComponentDto);
-    componentList.push(await this.componentRepository.save(component));
-    const question = this.questionRepository.create({ ...createQuestionDto, componentList });
-    return this.questionRepository.save(question);
-  }
-
-  findAll() {
+  async findAll() {
     return this.questionRepository.find();
   }
 
-  findOne(id: number) {
+  async findOne(id: number) {
     return this.questionRepository.findOne({
       where: {
         id,
@@ -54,35 +36,42 @@ export class QuestionService {
   }
 
   async saveQuestion(id: number, updateQuestionDto: UpdateQuestionDto) {
-    // 数据库中没有该 id 时，则创建数据
-    // 类型“number”与类型“FindOneOptions<Question>”不具有相同的属性。ts(2559)
     const question = await this.findOne(id);
+    // 数据库中没有该 id 时，则创建数据
+    const { title, description, css, js, componentList } = updateQuestionDto;
+    let result: Question;
+    let returnData: { errno: number; msg?: string };
     if (!question) {
       const questionTmp = new Question();
-      const { title, description, css, js, componentList } = updateQuestionDto;
-      console.log('componentList', componentList);
       questionTmp.id = id;
       questionTmp.title = title;
       questionTmp.description = description;
       questionTmp.css = css;
       questionTmp.js = js;
-      const componentListTmp = [];
+      // 需要将 componentList 对象转成字符串
+      questionTmp.componentList = JSON.stringify(componentList);
 
-      // 创建组件
-      for (const item of componentList) {
-        console.log('item', item);
-        const component = this.componentRepository.create(item);
-        await this.componentRepository.save(component);
-        componentListTmp.push(item.fe_id);
-      }
-
-      questionTmp.componentList = componentListTmp;
-      console.log(questionTmp);
-
-      return this.questionRepository.save(questionTmp);
+      result = await this.questionRepository.save(questionTmp);
+    } else {
+      // 如果数据库中有该 id 时，更新数据
+      question.title = title;
+      question.description = description;
+      question.css = css;
+      question.js = js;
+      question.componentList = JSON.stringify(componentList);
+      result = await this.questionRepository.save(question);
     }
-    const newQuestion = this.questionRepository.merge(question, updateQuestionDto);
-    return this.questionRepository.save(newQuestion);
+    if (result.id) {
+      returnData = {
+        errno: 0,
+      };
+    } else {
+      returnData = {
+        errno: -1,
+        msg: '保存失败',
+      };
+    }
+    return returnData;
   }
 
   remove(id: number) {
