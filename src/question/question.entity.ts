@@ -4,9 +4,9 @@ import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 @Entity()
 export class Question {
   // 为了避免前端使用关键字 id 可能产生问题，这里使用列名 _id
-  @PrimaryGeneratedColumn({ name: '_id' })
+  @PrimaryGeneratedColumn()
   @Expose()
-  id: number;
+  _id: number;
 
   // 问卷标题
   @Column()
@@ -14,15 +14,15 @@ export class Question {
   title: string;
 
   // 问卷描述
-  @Column()
+  @Column({ default: '' })
   description: string;
 
   // 问卷自定义 js 脚本
-  @Column()
+  @Column({ default: '' })
   js: string;
 
   // 问卷自定义样式
-  @Column()
+  @Column({ default: '' })
   css: string;
 
   // 是否已删除
@@ -34,7 +34,7 @@ export class Question {
   isPublished: boolean;
 
   // 组件列表
-  @Column()
+  @Column({ default: '' })
   componentList: string;
 
   // 创建时间，自动使用数据库插入时间
@@ -42,7 +42,7 @@ export class Question {
   createdAt: Date;
 
   // 是否星标
-  @Column()
+  @Column({ default: false })
   isStar: boolean;
 
   // 回答数

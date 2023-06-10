@@ -11,13 +11,24 @@ export class QuestionService {
   constructor(@InjectRepository(Question) private readonly questionRepository: Repository<Question>) {}
 
   async findAll() {
-    return this.questionRepository.find();
+    // 只需要特定列
+    // 时间使用东八区时间
+    const result = await this.questionRepository.find({
+      select: ['_id', 'title', 'isPublished', 'isStar', 'answerCount', 'createdAt', 'isDeleted'],
+    });
+    return {
+      errno: 0,
+      data: {
+        list: result,
+        total: result.length,
+      },
+    };
   }
 
   async findOne(id: number) {
     return this.questionRepository.findOne({
       where: {
-        id,
+        _id: id,
       },
     });
   }
@@ -25,14 +36,14 @@ export class QuestionService {
   async getNewestId() {
     const question = await this.questionRepository.find({
       order: {
-        id: 'DESC',
+        _id: 'DESC',
       },
       take: 1,
     });
     if (question.length === 0) {
       return 0;
     }
-    return question[0].id;
+    return question[0]._id;
   }
 
   async saveQuestion(id: number, updateQuestionDto: UpdateQuestionDto) {
@@ -43,7 +54,7 @@ export class QuestionService {
     let returnData: { errno: number; msg?: string };
     if (!question) {
       const questionTmp = new Question();
-      questionTmp.id = id;
+      questionTmp._id = id;
       questionTmp.title = title;
       questionTmp.description = description;
       questionTmp.css = css;
@@ -61,7 +72,7 @@ export class QuestionService {
       question.componentList = JSON.stringify(componentList);
       result = await this.questionRepository.save(question);
     }
-    if (result.id) {
+    if (result._id) {
       returnData = {
         errno: 0,
       };
