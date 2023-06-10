@@ -1,5 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 
+import { returnData } from '@/utils/axios.helper';
+
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionService } from './question.service';
 
@@ -29,8 +31,11 @@ export class QuestionController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.questionService.findOne(+id);
+  async findOne(@Param('id') id: string) {
+    const result = await this.questionService.findOne(+id);
+    // 将 resule 内 componentList 字段的值转为 JSON 格式
+    result.componentList = JSON.parse(result.componentList);
+    return returnData(result);
   }
 
   // 更新问卷

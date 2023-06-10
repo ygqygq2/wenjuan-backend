@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { DeepPartial, Repository } from 'typeorm';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { Question } from './question.entity';
@@ -50,7 +50,7 @@ export class QuestionService {
     const question = await this.findOne(id);
     // 数据库中没有该 id 时，则创建数据
     const { title, description, css, js, componentList } = updateQuestionDto;
-    let result: Question;
+    let result: Question | DeepPartial<Question>[];
     let returnData: { errno: number; msg?: string };
     if (!question) {
       const questionTmp = new Question();
@@ -72,7 +72,7 @@ export class QuestionService {
       question.componentList = JSON.stringify(componentList);
       result = await this.questionRepository.save(question);
     }
-    if (result._id) {
+    if (result['_id']) {
       returnData = {
         errno: 0,
       };
