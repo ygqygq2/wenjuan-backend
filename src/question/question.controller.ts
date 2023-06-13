@@ -19,7 +19,7 @@ export class QuestionController {
     return {
       errno: 0,
       data: {
-        id: id + 1,
+        id,
       },
     };
   }
@@ -41,7 +41,19 @@ export class QuestionController {
   // 更新问卷
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateQuestionDto: UpdateQuestionDto) {
+    console.log(
+      '🚀 ~ file: question.controller.ts:44~ QuestionController~ update~ updateQuestionDto:',
+      updateQuestionDto,
+    );
+
     return this.questionService.saveQuestion(+id, updateQuestionDto);
+  }
+
+  // 复制问卷
+  @Post('/duplicate/:id')
+  copy(@Param('id') id: string) {
+    // 获取最新 id
+    return this.questionService.copy(+id);
   }
 
   @Delete(':id')
