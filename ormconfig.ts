@@ -20,13 +20,15 @@ export function getServerConfig() {
   const config = { ...defaultConfig, ...envConfig };
   return config;
 }
-// 通过dotEnv 来解析不同的配置
-export function buildConnectionOptions() {
-  const defaultConfig = getEnv('.env');
-  const envConfig = getEnv(`.env.${process.env.NODE_ENV || 'development'}`);
-  const config = { ...defaultConfig, ...envConfig };
-  const entitiesDir =
-    process.env.NODE_ENV === 'test' ? [`${__dirname}/**/*.entity.ts`] : [`${__dirname}/**/*.entity{.js,.ts}`];
+
+function getEntitiesDir() {
+  return process.env.NODE_ENV === 'test' ? [`${__dirname}/**/*.entity.ts`] : [`${__dirname}/**/*.entity{.js,.ts}`];
+}
+
+// 通过 dotEnv 来解析不同的配置
+export function getConnectionParams() {
+  const config = getServerConfig();
+  const entitiesDir = getEntitiesDir();
   return {
     type: config[ConfigEnum.DB_TYPE],
     host: config[ConfigEnum.DB_HOST],
@@ -37,10 +39,16 @@ export function buildConnectionOptions() {
     synchronize: config[ConfigEnum.DB_SYNC] === 'true',
     logging: config[ConfigEnum.DB_LOGGING] === 'true',
     entities: entitiesDir,
+    redis: {
+      host: config[ConfigEnum.REDIS_HOST],
+      port: config[ConfigEnum.REDIS_PORT],
+      password: config[ConfigEnum.REDIS_PASSWORD],
+      db: config[ConfigEnum.REDIS_DB],
+    },
   } as TypeOrmModuleOptions;
 }
 
-export const connectionParams = buildConnectionOptions();
+export const connectionParams = getConnectionParams();
 
 export default new DataSource({
   ...connectionParams,

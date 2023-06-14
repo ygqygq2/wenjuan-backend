@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { DeepPartial, Repository } from 'typeorm';
+import { RedisService } from 'nestjs-redis';
+import { Repository } from 'typeorm';
 
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
@@ -10,7 +11,12 @@ import { Question } from './question.entity';
 
 @Injectable()
 export class QuestionService {
-  constructor(@InjectRepository(Question) private readonly questionRepository: Repository<Question>) {}
+  private newestId = 0;
+
+  constructor(
+    @InjectRepository(Question) private readonly questionRepository: Repository<Question>,
+    private readonly redisService: RedisService,
+  ) {}
 
   async findAll() {
     // 只需要特定列
@@ -35,24 +41,33 @@ export class QuestionService {
     });
   }
 
+  // 生成最新唯一 id 作为问卷 id
+  // 先从 mysql 中获取最大 id
+  // 再使用 redis 作为计数器
+  // 如果 redis 中没有该计数器，则创建，否则获取
   async getNewestId() {
-    const question = await this.questionRepository.find({
-      order: {
-        _id: 'DESC',
-      },
-      take: 1,
-    });
-    if (question.length === 0) {
-      return 0;
+    const redisClient = this.redisService.getClient();
+    const newestId = await redisClient.get('question-newest-id');
+    if (newestId) {
+      this.newestId = parseInt(newestId, 10) + 1;
+    } else {
+      const [latestQuestion] = await this.questionRepository.find({
+        order: {
+          _id: 'DESC',
+        },
+        take: 1,
+      });
+      this.newestId = (latestQuestion?._id ?? -1) + 1;
     }
-    return question[0]._id + 1;
+    await redisClient.set('question-newest-id', this.newestId.toString());
+    return this.newestId;
   }
 
   async saveQuestion(id: number, updateQuestionDto: UpdateQuestionDto) {
     const question = await this.findOne(id);
     // 数据库中没有该 id 时，则创建数据
     const { title, description, css, js, componentList, isStar, isPublished, isDeleted } = updateQuestionDto;
-    let result: Question | DeepPartial<Question>[];
+    let result: Question;
     let returnData: ReturnData;
     if (!question) {
       const questionTmp = new Question();
@@ -75,7 +90,6 @@ export class QuestionService {
       question.isStar = isStar;
       question.isPublished = isPublished;
       question.isDeleted = isDeleted;
-      console.log('🚀 ~ file: question.service.ts:78~ QuestionService~ saveQuestion~ question:', question);
 
       result = await this.questionRepository.save(question);
     }
@@ -96,18 +110,23 @@ export class QuestionService {
   async copy(id: number) {
     let returnData: ReturnData;
     const question = await this.findOne(id);
+    if (!question) {
+      returnData = {
+        errno: Errno.ERRNO_12,
+        msg: ErrMsg[Errno.ERRNO_12],
+      };
+      return returnData;
+    }
     const { title, description, css, js, componentList } = question;
+
     const questionTmp = new Question();
     questionTmp._id = await this.getNewestId();
-    console.log('🚀 ~ file: question.service.ts:97~ QuestionService~ copy~ questionTmp._id:', questionTmp._id);
-
     questionTmp.title = title;
     questionTmp.description = description;
     questionTmp.css = css;
     questionTmp.js = js;
     questionTmp.componentList = componentList;
     const result = await this.questionRepository.save(questionTmp);
-    console.log('🚀 ~ file: question.service.ts:103~ QuestionService~ copy~ result:', result);
     if (result['_id']) {
       returnData = {
         errno: Errno.SUCCESS,

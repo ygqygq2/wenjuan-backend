@@ -9,6 +9,10 @@ export enum ConfigEnum {
   DB_LOGGING = 'DB_LOGGING',
   JWT_SECRET = 'JWT_SECRET',
   JWT_EXPIRES_IN = 'JWT_EXPIRES_IN',
+  REDIS_HOST = 'REDIS_HOST',
+  REDIS_PORT = 'REDIS_PORT',
+  REDIS_PASSWORD = 'REDIS_PASSWORD',
+  REDIS_DB = 'REDIS_DB',
 }
 
 export enum LogEnum {

@@ -33,7 +33,7 @@ export class QuestionController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const result = await this.questionService.findOne(+id);
-    // 将 resule 内 componentList 字段的值转为 JSON 格式
+    // 将 result 内 componentList 字段的值转为 JSON 格式
     result.componentList = JSON.parse(result.componentList);
     return returnData(result);
   }
@@ -41,11 +41,6 @@ export class QuestionController {
   // 更新问卷
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateQuestionDto: UpdateQuestionDto) {
-    console.log(
-      '🚀 ~ file: question.controller.ts:44~ QuestionController~ update~ updateQuestionDto:',
-      updateQuestionDto,
-    );
-
     return this.questionService.saveQuestion(+id, updateQuestionDto);
   }
 
