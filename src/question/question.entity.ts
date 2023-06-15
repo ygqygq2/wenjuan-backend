@@ -33,8 +33,8 @@ export class Question {
   @Column({ default: false })
   isPublished: boolean;
 
-  // 组件列表
-  @Column({ default: '' })
+  // 组件列表，保存 text 数据
+  @Column('text', { default: '' })
   componentList: string;
 
   // 创建时间，自动使用数据库插入时间

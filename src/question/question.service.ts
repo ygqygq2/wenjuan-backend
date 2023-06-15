@@ -1,7 +1,8 @@
+import { RedisService } from '@liaoliaots/nestjs-redis';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { RedisService } from 'nestjs-redis';
+import Redis from 'ioredis';
 import { Repository } from 'typeorm';
 
 import { ErrMsg, Errno } from '@/enum/errno.enum';
@@ -13,10 +14,14 @@ import { Question } from './question.entity';
 export class QuestionService {
   private newestId = 0;
 
+  private readonly redis: Redis;
+
   constructor(
     @InjectRepository(Question) private readonly questionRepository: Repository<Question>,
     private readonly redisService: RedisService,
-  ) {}
+  ) {
+    this.redis = this.redisService.getClient();
+  }
 
   async findAll() {
     // 只需要特定列
@@ -46,8 +51,7 @@ export class QuestionService {
   // 再使用 redis 作为计数器
   // 如果 redis 中没有该计数器，则创建，否则获取
   async getNewestId() {
-    const redisClient = this.redisService.getClient();
-    const newestId = await redisClient.get('question-newest-id');
+    const newestId = await this.redis.get('question-newest-id');
     if (newestId) {
       this.newestId = parseInt(newestId, 10) + 1;
     } else {
@@ -59,7 +63,7 @@ export class QuestionService {
       });
       this.newestId = (latestQuestion?._id ?? -1) + 1;
     }
-    await redisClient.set('question-newest-id', this.newestId.toString());
+    await this.redis.set('question-newest-id', this.newestId.toString());
     return this.newestId;
   }
 

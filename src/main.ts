@@ -3,9 +3,8 @@ import { NestFactory } from '@nestjs/core';
 
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
-import { getServerConfig } from '../ormconfig';
-
 import { AppModule } from './app.module';
+import { getServerConfig } from './utils/config.helper';
 // import{ AllExceptionFilter} from './filters/all-exception.filter';
 
 async function bootstrap() {
