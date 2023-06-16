@@ -10,6 +10,14 @@ import { ErrMsg, Errno } from '@/enum/errno.enum';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { Question } from './question.entity';
 
+// type SearchOption = {
+//   keyword: string;
+//   isStar: boolean;
+//   isDeleted: boolean;
+//   page: number;
+//   pageSize: number;
+// };
+
 @Injectable()
 export class QuestionService {
   private newestId = 0;
@@ -23,17 +31,78 @@ export class QuestionService {
     this.redis = this.redisService.getClient();
   }
 
-  async findAll() {
+  // 查询问卷列表，根据接收到的参数查询，SearchOption
+  async findAll(...args: any[]) {
     // 只需要特定列
-    // 时间使用东八区时间
-    const result = await this.questionRepository.find({
-      select: ['_id', 'title', 'isPublished', 'isStar', 'answerCount', 'createdAt', 'isDeleted'],
+    // const result= await this.questionRepository.find ({
+    //   select: ['_id', 'title', 'isPublished', 'isStar', 'answerCount', 'createdAt', 'isDeleted'],
+    // });
+    // return {
+    //   errno: Errno.SUCCESS,
+    //   data: {
+    //     list: result,
+    //     total: result.length,
+    //   },
+    // };
+
+    const queryBuilder = this.questionRepository.createQueryBuilder('question');
+    queryBuilder.select([
+      'question._id',
+      'question.title',
+      'question.isPublished',
+      'question.isStar',
+      'question.answerCount',
+      'question.createdAt',
+      'question.isDeleted',
+      `COUNT (*) OVER() as total`, // 添加 total 字段，用于返回数据总数
+    ]);
+    args.forEach((arg) => {
+      // page, 默认为 1
+      const page = arg.page || 1;
+      // pageSize, 默认为 10
+      const pageSize = arg.pageSize || 10;
+      // 计算起始索引
+      const startIndex = (page - 1) * pageSize;
+      // 设置 take 和 skip
+      queryBuilder.take(pageSize).skip(startIndex);
+      // isDeleted, 没有传值时，默认为 false
+      // arg.isDeleted 是 string 类型
+      const isDeleted = arg.isDeleted === 'true' || false;
+      queryBuilder.andWhere('question.isDeleted= :isDeleted', { isDeleted });
+      // keyword
+      if (arg.keyword) {
+        queryBuilder.andWhere('question.title like :keyword', { keyword: `%${arg.keyword}%` });
+      }
+
+      // isStar
+      if (arg.isStar !== undefined) {
+        // arg.isStar 是 string 类型
+        const isStar = arg.isStar === 'true';
+        queryBuilder.andWhere('question.isStar= :isStar', { isStar });
+      }
+      // 根据需要添加其他查询条件
     });
+    const result = await queryBuilder.getRawAndEntities();
+
+    const list = result.entities.map((entity) => {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const { _id, title, isPublished, isStar, answerCount, createdAt, isDeleted } = entity;
+      return {
+        _id,
+        title,
+        isPublished,
+        isStar,
+        answerCount,
+        createdAt,
+        isDeleted,
+      };
+    });
+    const total = result.raw[0]?.total || 0;
     return {
       errno: Errno.SUCCESS,
       data: {
-        list: result,
-        total: result.length,
+        list,
+        total,
       },
     };
   }

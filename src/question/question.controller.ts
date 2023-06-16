@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { returnData } from '@/utils/axios.helper';
 
@@ -26,8 +26,8 @@ export class QuestionController {
 
   // 查询问卷列表，根据接收到的参数查询，len, isDeleted, isStar
   @Get()
-  findAll(@Param('len') len: number, @Param('isDeleted') isDeleted: boolean, @Param('isStar') isStar: boolean) {
-    return this.questionService.findAll();
+  findAll(@Query() queryParams: any) {
+    return this.questionService.findAll(queryParams);
   }
 
   @Get(':id')
