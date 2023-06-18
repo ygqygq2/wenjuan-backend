@@ -4,6 +4,7 @@ export enum Errno {
   ERRNO_10 = 10,
   ERRNO_11 = 11,
   ERRNO_12 = 12,
+  ERRNO_13 = 13,
 }
 
 export const ErrMsg: Record<Errno, string> = {
@@ -11,4 +12,5 @@ export const ErrMsg: Record<Errno, string> = {
   [Errno.ERRNO_10]: '保存失败',
   [Errno.ERRNO_11]: '复制失败',
   [Errno.ERRNO_12]: '查询失败',
+  [Errno.ERRNO_13]: '删除失败',
 };

@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
-import { returnData } from '@/utils/axios.helper';
+import { ErrMsg, Errno } from '@/enum/errno.enum';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionService } from './question.service';
@@ -17,7 +17,7 @@ export class QuestionController {
     const id = await this.questionService.getNewestId();
     // 返回 id 加 1
     return {
-      errno: 0,
+      errno: Errno.SUCCESS,
       data: {
         id,
       },
@@ -51,8 +51,23 @@ export class QuestionController {
     return this.questionService.copy(+id);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.questionService.remove(+id);
+  // 接收到的是 {ids: [1, 2, 3]} 这样的数据
+  @Delete()
+  async remove(@Body() body: { ids: number[] }) {
+    const { ids } = body;
+    const deleteResult = await this.questionService.removeByIds(ids);
+    let returnData: ReturnData;
+    // 判断是否删除成功
+    if (deleteResult.affected === ids.length) {
+      returnData = {
+        errno: Errno.SUCCESS,
+      };
+    } else {
+      returnData = {
+        errno: Errno.ERRNO_13,
+        msg: ErrMsg[Errno.ERRNO_13],
+      };
+    }
+    return returnData;
   }
 }

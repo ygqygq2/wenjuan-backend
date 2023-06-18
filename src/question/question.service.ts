@@ -216,8 +216,11 @@ export class QuestionService {
     return returnData;
   }
 
-  remove(id: number) {
-    // delete  -> AfterRemove 不会触发
-    return this.questionRepository.delete(id);
+  /**
+   * 批量删除
+   * @param ids - 问卷 id 数组
+   */
+  removeByIds(ids: number[]) {
+    return this.questionRepository.delete(ids);
   }
 }
