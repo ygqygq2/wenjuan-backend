@@ -33,9 +33,19 @@ export class QuestionController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const result = await this.questionService.findOne(+id);
+    // 判断是否存在
+    if (!result) {
+      return {
+        errno: Errno.ERRNO_12,
+        msg: ErrMsg[Errno.ERRNO_12],
+      };
+    }
     // 将 result 内 componentList 字段的值转为 JSON 格式
     result.componentList = JSON.parse(result.componentList);
-    return returnData(result);
+    return {
+      errno: Errno.SUCCESS,
+      data: result,
+    };
   }
 
   // 更新问卷
