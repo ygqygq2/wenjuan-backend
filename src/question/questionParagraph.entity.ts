@@ -1,21 +1,16 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 
-@Entity()
-export class QuestionParagraph {
-  @PrimaryGeneratedColumn()
-  @Expose()
-  fe_id: string;
+import { Component } from './questionComponent.entity';
 
+@Entity({ name: 'question_paragraph' })
+export class QuestionParagraph extends Component {
   // 组件内容
   @Column()
   @Expose()
-  text: string;
+  props_text: string;
 
   // 是否居中
   @Column({ default: false })
-  isCenter: boolean;
-
-  @Column({ default: false })
-  disabled: boolean;
+  props_isCenter: boolean;
 }

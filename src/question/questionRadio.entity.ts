@@ -1,26 +1,20 @@
-import { Expose } from 'class-transformer';
-import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToMany } from 'typeorm';
 
+import { Component } from './questionComponent.entity';
 import { QuestionRadioOption } from './questionRadioOption.entity';
 
-@Entity()
-export class QuestionRadio {
-  @PrimaryGeneratedColumn()
-  @Expose()
-  fe_id: string;
-
-  // 组件标题
-  @Column()
-  @Expose()
-  title: string;
-
+@Entity({ name: 'question_radio' })
+export class QuestionRadio extends Component {
   // 是否竖向
   @Column({ default: false })
-  isVertical: boolean;
+  props_isVertical: boolean;
 
   // 值
   @Column({ default: '' })
-  value: string;
+  props_value: string;
+
+  @Column({ default: '' })
+  props_title: string;
 
   // 单选框
   @OneToMany(() => QuestionRadioOption, (questionRadioOption) => questionRadioOption.fe_id, {
@@ -30,7 +24,4 @@ export class QuestionRadio {
   })
   @JoinColumn()
   options: QuestionRadioOption[];
-
-  @Column({ default: false })
-  disabled: boolean;
 }

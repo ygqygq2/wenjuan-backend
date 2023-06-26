@@ -1,21 +1,14 @@
-import { Expose } from 'class-transformer';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 
-@Entity()
-export class QuestionTextarea {
-  @PrimaryGeneratedColumn()
-  @Expose()
-  fe_id: string;
+import { Component } from './questionComponent.entity';
 
-  // 组件标题
-  @Column()
-  @Expose()
-  title: string;
+@Entity({ name: 'question_textarea' })
+export class QuestionTextarea extends Component {
+  // 组件显示标题
+  @Column({ default: '' })
+  props_title: string;
 
   // 组件输入提示
   @Column({ default: '' })
-  placeholder: string;
-
-  @Column({ default: false })
-  disabled: boolean;
+  props_placeholder: string;
 }

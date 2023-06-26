@@ -3,7 +3,7 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { QuestionCheckbox } from './questionCheckbox.entity';
 
-@Entity()
+@Entity({ name: 'question_checkbox_option' })
 export class QuestionCheckboxOption {
   @PrimaryGeneratedColumn()
   @Expose()

@@ -9,6 +9,15 @@ import { ErrMsg, Errno } from '@/enum/errno.enum';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { Question } from './question.entity';
+import { QuestionCheckbox } from './questionCheckbox.entity';
+import { QuestionCheckboxOption } from './questionCheckboxOption.entity';
+import { QuestionInfo } from './questionInfo.entity';
+import { QuestionInput } from './questionInput.entity';
+import { QuestionParagraph } from './questionParagraph.entity';
+import { QuestionRadio } from './questionRadio.entity';
+import { QuestionRadioOption } from './questionRadioOption.entity';
+import { QuestionTextarea } from './questionTextarea.entity';
+import { QuestionTitle } from './questionTitle.entity';
 
 // type SearchOption = {
 //   keyword: string;
@@ -26,6 +35,17 @@ export class QuestionService {
 
   constructor(
     @InjectRepository(Question) private readonly questionRepository: Repository<Question>,
+    @InjectRepository(QuestionCheckbox) private readonly questionCheckboxRepository: Repository<QuestionCheckbox>,
+    @InjectRepository(QuestionCheckboxOption)
+    private readonly questionCheckboxOptionRepository: Repository<QuestionCheckboxOption>,
+    @InjectRepository(QuestionInfo) private readonly questionInfoRepository: Repository<QuestionInfo>,
+    @InjectRepository(QuestionInput) private readonly questionInputRepository: Repository<QuestionInput>,
+    @InjectRepository(QuestionParagraph) private readonly questionParagraphRepository: Repository<QuestionParagraph>,
+    @InjectRepository(QuestionRadio) private readonly questionRadioRepository: Repository<QuestionRadio>,
+    @InjectRepository(QuestionRadioOption)
+    private readonly questionRadioOptionRepository: Repository<QuestionRadioOption>,
+    @InjectRepository(QuestionTextarea) private readonly questionTextareaRepository: Repository<QuestionTextarea>,
+    @InjectRepository(QuestionTitle) private readonly questionTitleRepository: Repository<QuestionTitle>,
     private readonly redisService: RedisService,
   ) {
     this.redis = this.redisService.getClient();
@@ -149,9 +169,160 @@ export class QuestionService {
       questionTmp.description = description;
       questionTmp.css = css;
       questionTmp.js = js;
-      // 需要将 componentList 对象转成字符串
-      questionTmp.componentList = JSON.stringify(componentList);
-
+      // componentList 数据类似下面的格式
+      // [
+      //   {
+      //     fe_id: 'Z3xIwW5MSSzUR3CJHfLJm',
+      //     title: '标题',
+      //     type: 'questionTitle',
+      //     props: {
+      //       text: '一行标题',
+      //       level: 1,
+      //       isCenter: false,
+      //     },
+      //     isHidden: false,
+      //   },
+      //   {
+      //     fe_id: 'GiTImvo0uL75QrdspkWEv',
+      //     title: '单选',
+      //     type: 'questionRadio',
+      //     props: {
+      //       title: '单选标题',
+      //       isVertical: false,
+      //       options: [
+      //         {
+      //           value: 'item1',
+      //           text: '选项 1',
+      //         },
+      //         {
+      //           value: 'item2',
+      //           text: '选项 2',
+      //         },
+      //         {
+      //           value: 'item3',
+      //           text: '选项 3',
+      //         },
+      //       ],
+      //       value: '',
+      //     },
+      //   },
+      // ];
+      // componentList 转换成对象
+      const componentListObj = JSON.parse(JSON.stringify(componentList));
+      // 没有问卷，组件肯定不存在，先创建组件
+      const questionComponentList = [];
+      // 循环 componentListObj
+      componentListObj.forEach(async (component) => {
+        if (component.type === 'questionCheckbox') {
+          const componentTmp = new QuestionCheckbox();
+          componentTmp.fe_id = component.fe_id;
+          componentTmp.title = component.title || '';
+          componentTmp.isHidden = component.isHidden || false;
+          componentTmp.disabled = component.disabled || false;
+          const { props } = component;
+          const { propsTitle, propsIsVertical, propsOptions } = props;
+          componentTmp.props_title = propsTitle || '';
+          componentTmp.props_isVertical = propsIsVertical || false;
+          const optionsTmp = [];
+          propsOptions.forEach(async (option) => {
+            const optionTmp = new QuestionCheckboxOption();
+            optionTmp.value = option.value || '';
+            optionTmp.text = option.text || '';
+            optionTmp.checked = option.checked || false;
+            // 保存选项
+            const optResult = await this.questionCheckboxOptionRepository.save(optionTmp);
+            optionsTmp.push(optResult._id);
+          });
+          componentTmp.options = optionsTmp;
+          // 保存组件
+          const compResult = await this.questionCheckboxRepository.save(componentTmp);
+          // 增加组件 fe_id
+          questionComponentList.push(compResult.fe_id);
+        } else if (component.type === 'questionInfo') {
+          const componentTmp = new QuestionInfo();
+          componentTmp.fe_id = component.fe_id;
+          componentTmp.title = component.title || '';
+          componentTmp.isHidden = component.isHidden || false;
+          componentTmp.disabled = component.disabled || false;
+          const { props } = component;
+          const { propsTitle, propsDescription } = props;
+          componentTmp.props_title = propsTitle || '';
+          componentTmp.props_description = propsDescription || '';
+          const compResult = await this.questionInfoRepository.save(componentTmp);
+          questionComponentList.push(compResult.fe_id);
+        } else if (component.type === 'questionInput') {
+          const componentTmp = new QuestionInput();
+          componentTmp.fe_id = component.fe_id;
+          componentTmp.title = component.title || '';
+          componentTmp.isHidden = component.isHidden || false;
+          componentTmp.disabled = component.disabled || false;
+          const { props } = component;
+          const { propsTitle, propsPlaceholder } = props;
+          componentTmp.props_title = propsTitle || '';
+          componentTmp.props_placeholder = propsPlaceholder || '';
+          const compResult = await this.questionInputRepository.save(componentTmp);
+          questionComponentList.push(compResult.fe_id);
+        } else if (component.type === 'questionParagraph') {
+          const componentTmp = new QuestionParagraph();
+          componentTmp.fe_id = component.fe_id;
+          componentTmp.title = component.title || '';
+          componentTmp.isHidden = component.isHidden || false;
+          componentTmp.disabled = component.disabled || false;
+          const { props } = component;
+          const { propsText, propsIsCenter } = props;
+          componentTmp.props_text = propsText || '';
+          componentTmp.props_isCenter = propsIsCenter || false;
+          const compResult = await this.questionParagraphRepository.save(componentTmp);
+          questionComponentList.push(compResult.fe_id);
+        } else if (component.type === 'questionRadio') {
+          const componentTmp = new QuestionRadio();
+          componentTmp.fe_id = component.fe_id;
+          componentTmp.title = component.title || '';
+          componentTmp.isHidden = component.isHidden || false;
+          componentTmp.disabled = component.disabled || false;
+          const { props } = component;
+          const { propsTitle, propsIsVertical, propsValue, propsOptions } = props;
+          componentTmp.props_title = propsTitle || '';
+          componentTmp.props_isVertical = propsIsVertical || false;
+          componentTmp.props_value = propsValue || '';
+          const optionsTmp = [];
+          propsOptions.forEach(async (option) => {
+            const optionTmp = new QuestionRadioOption();
+            optionTmp.value = option.value || '';
+            optionTmp.text = option.text || '';
+            // 保存选项
+            const optResult = await this.questionRadioOptionRepository.save(optionTmp);
+            optionsTmp.push(optResult._id);
+          });
+          const compResult = await this.questionRadioRepository.save(componentTmp);
+          questionComponentList.push(compResult.fe_id);
+        } else if (component.type === 'questionTextarea') {
+          const componentTmp = new QuestionTextarea();
+          componentTmp.fe_id = component.fe_id;
+          componentTmp.title = component.title || '';
+          componentTmp.isHidden = component.isHidden || false;
+          componentTmp.disabled = component.disabled || false;
+          const { props } = component;
+          const { propsTitle, propsPlaceholder } = props;
+          componentTmp.props_title = propsTitle || '';
+          componentTmp.props_placeholder = propsPlaceholder || '';
+          const compResult = await this.questionTextareaRepository.save(componentTmp);
+          questionComponentList.push(compResult.fe_id);
+        } else if (component.type === 'questionTitle') {
+          const componentTmp = new QuestionTitle();
+          componentTmp.fe_id = component.fe_id;
+          componentTmp.title = component.title || '';
+          componentTmp.isHidden = component.isHidden || false;
+          componentTmp.disabled = component.disabled || false;
+          const { props } = component;
+          const { propsText, propsLevel, propsIsCenter } = props;
+          componentTmp.props_text = propsText || '';
+          componentTmp.props_level = propsLevel || 1;
+          componentTmp.props_isCenter = propsIsCenter || false;
+          const compResult = await this.questionTitleRepository.save(componentTmp);
+          questionComponentList.push(compResult.fe_id);
+        }
+      });
       result = await this.questionRepository.save(questionTmp);
     } else {
       // 如果数据库中有该 id 时，更新数据
@@ -159,7 +330,6 @@ export class QuestionService {
       question.description = description;
       question.css = css;
       question.js = js;
-      question.componentList = JSON.stringify(componentList);
       question.isStar = isStar;
       question.isPublished = isPublished;
       question.isDeleted = isDeleted;

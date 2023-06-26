@@ -8,10 +8,32 @@ import { ConfigEnum } from '@/enum/config.enum';
 import { QuestionController } from './question.controller';
 import { Question } from './question.entity';
 import { QuestionService } from './question.service';
+import { QuestionCheckbox } from './questionCheckbox.entity';
+import { QuestionCheckboxOption } from './questionCheckboxOption.entity';
+import { Component } from './questionComponent.entity';
+import { QuestionInfo } from './questionInfo.entity';
+import { QuestionInput } from './questionInput.entity';
+import { QuestionParagraph } from './questionParagraph.entity';
+import { QuestionRadio } from './questionRadio.entity';
+import { QuestionRadioOption } from './questionRadioOption.entity';
+import { QuestionTextarea } from './questionTextarea.entity';
+import { QuestionTitle } from './questionTitle.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Question]),
+    TypeOrmModule.forFeature([
+      Question,
+      Component,
+      QuestionCheckbox,
+      QuestionCheckboxOption,
+      QuestionInfo,
+      QuestionInput,
+      QuestionParagraph,
+      QuestionRadio,
+      QuestionRadioOption,
+      QuestionTextarea,
+      QuestionTitle,
+    ]),
     // ref: https://github.com/liaoliaots/nestjs-redis/blob/main/docs/latest/redis.md
     RedisModule.forRootAsync({
       imports: [ConfigModule],

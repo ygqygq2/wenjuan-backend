@@ -1,10 +1,8 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-
-import { Component } from './questionComponent.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
-export class Question {
+export class Stat {
   // 为了避免前端使用关键字 id 可能产生问题，这里使用列名 _id
   @PrimaryGeneratedColumn()
   @Expose()
@@ -35,14 +33,9 @@ export class Question {
   @Column({ default: false })
   isPublished: boolean;
 
-  // 组件列表，保存的是组件的 fe_id 列表
-  @OneToMany(() => Component, (component) => component.fe_id, {
-    eager: true,
-    cascade: true,
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn()
-  componentList: Component[];
+  // 组件列表，保存 text 数据
+  @Column('text', { default: '' })
+  componentList: string;
 
   // 创建时间，自动使用数据库插入时间
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

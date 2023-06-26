@@ -1,21 +1,14 @@
-import { Expose } from 'class-transformer';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 
-@Entity()
-export class QuestionInput {
-  @PrimaryGeneratedColumn()
-  @Expose()
-  fe_id: string;
+import { Component } from './questionComponent.entity';
 
-  // 组件标题
-  @Column()
-  @Expose()
-  title: string;
-
-  // 输入框提示
+@Entity({ name: 'question_info' })
+export class QuestionInput extends Component {
+  // 组件显示标题
   @Column({ default: '' })
-  placeholder: string;
+  props_title: string;
 
-  @Column({ default: false })
-  disabled: boolean;
+  // 问卷前台输入框提示
+  @Column({ default: '' })
+  props_placeholder: string;
 }

@@ -3,7 +3,7 @@ import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { QuestionRadio } from './questionRadio.entity';
 
-@Entity()
+@Entity({ name: 'question_radio_option' })
 export class QuestionRadioOption {
   @PrimaryGeneratedColumn()
   @Expose()

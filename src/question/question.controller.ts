@@ -41,7 +41,8 @@ export class QuestionController {
       };
     }
     // 将 result 内 componentList 字段的值转为 JSON 格式
-    result.componentList = JSON.parse(result.componentList);
+    // result.componentList = JSON.parse(result.componentList);
+    result.componentList = [];
     return {
       errno: Errno.SUCCESS,
       data: result,

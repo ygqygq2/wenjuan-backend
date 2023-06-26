@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { LogsModule } from './logs/logs.module';
 import { QuestionModule } from './question/question.module';
 import { RolesModule } from './roles/roles.module';
+import { StatModule } from './stat/stat.module';
 import { UserModule } from './user/user.module';
 
 const envFilePath = `.env.${process.env.NODE_ENV || 'development'}`;
@@ -47,6 +48,7 @@ const envFilePath = `.env.${process.env.NODE_ENV || 'development'}`;
     RolesModule,
     AuthModule,
     QuestionModule,
+    StatModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger],

@@ -1,22 +1,17 @@
-import { Expose } from 'class-transformer';
-import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToMany } from 'typeorm';
 
 import { QuestionCheckboxOption } from './questionCheckboxOption.entity';
+import { Component } from './questionComponent.entity';
 
-@Entity()
-export class QuestionCheckbox {
-  @PrimaryGeneratedColumn()
-  @Expose()
-  fe_id: string;
-
-  // 组件标题
-  @Column()
-  @Expose()
-  title: string;
+@Entity({ name: 'question_checkbox' })
+export class QuestionCheckbox extends Component {
+  // 组件显示标题
+  @Column({ default: '' })
+  props_title: string;
 
   // 是否竖向
   @Column({ default: false })
-  isVertical: boolean;
+  props_isVertical: boolean;
 
   // 多选框列表
   @OneToMany(() => QuestionCheckboxOption, (questionCheckboxOption) => questionCheckboxOption.fe_id, {
@@ -26,7 +21,4 @@ export class QuestionCheckbox {
   })
   @JoinColumn()
   options: QuestionCheckboxOption[];
-
-  @Column({ default: false })
-  disabled: boolean;
 }

@@ -1,5 +1,7 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity } from 'typeorm';
+
+import { Component } from './questionComponent.entity';
 
 enum QuestionTextareaLevel {
   Level1 = 1,
@@ -9,25 +11,18 @@ enum QuestionTextareaLevel {
   Level5 = 5,
 }
 
-@Entity()
-export class QuestionTitle {
-  @PrimaryGeneratedColumn()
-  @Expose()
-  fe_id: string;
-
+@Entity({ name: 'question_title' })
+export class QuestionTitle extends Component {
   // 组件内容
   @Column()
   @Expose()
-  text: string;
+  props_text: string;
 
   // 标题级别
   @Column({ default: QuestionTextareaLevel.Level1 })
-  level: QuestionTextareaLevel;
+  props_level: QuestionTextareaLevel;
 
   // 是否居中
   @Column({ default: false })
-  isCenter: boolean;
-
-  @Column({ default: false })
-  disabled: boolean;
+  props_isCenter: boolean;
 }
