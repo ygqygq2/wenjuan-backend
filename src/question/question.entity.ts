@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Component } from './questionComponent.entity';
 
@@ -35,13 +35,22 @@ export class Question {
   @Column({ default: false })
   isPublished: boolean;
 
-  // 组件列表，保存的是组件的 fe_id 列表
-  @OneToMany(() => Component, (component) => component.fe_id, {
+  @ManyToMany(() => Component, {
     eager: true,
     cascade: true,
     onDelete: 'CASCADE',
   })
-  @JoinColumn()
+  @JoinTable({
+    name: 'question_component',
+    joinColumn: {
+      name: 'question_id',
+      referencedColumnName: '_id',
+    },
+    inverseJoinColumn: {
+      name: 'component_fe_id',
+      referencedColumnName: 'fe_id',
+    },
+  })
   componentList: Component[];
 
   // 创建时间，自动使用数据库插入时间

@@ -1,6 +1,8 @@
 import { Expose } from 'class-transformer';
 import { Column, Entity } from 'typeorm';
 
+import { ComponentTypeNumber } from '@/enum/componentType.enum';
+
 import { Component } from './questionComponent.entity';
 
 enum QuestionTextareaLevel {
@@ -13,6 +15,8 @@ enum QuestionTextareaLevel {
 
 @Entity({ name: 'question_title' })
 export class QuestionTitle extends Component {
+  type: ComponentTypeNumber = ComponentTypeNumber.QUESTION_TITLE;
+
   // 组件内容
   @Column()
   @Expose()

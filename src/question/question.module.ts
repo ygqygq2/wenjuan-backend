@@ -10,7 +10,6 @@ import { Question } from './question.entity';
 import { QuestionService } from './question.service';
 import { QuestionCheckbox } from './questionCheckbox.entity';
 import { QuestionCheckboxOption } from './questionCheckboxOption.entity';
-import { Component } from './questionComponent.entity';
 import { QuestionInfo } from './questionInfo.entity';
 import { QuestionInput } from './questionInput.entity';
 import { QuestionParagraph } from './questionParagraph.entity';
@@ -23,7 +22,6 @@ import { QuestionTitle } from './questionTitle.entity';
   imports: [
     TypeOrmModule.forFeature([
       Question,
-      Component,
       QuestionCheckbox,
       QuestionCheckboxOption,
       QuestionInfo,
