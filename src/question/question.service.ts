@@ -19,7 +19,7 @@ import { QuestionRadioOption } from './questionRadioOption.entity';
 import { QuestionTextarea } from './questionTextarea.entity';
 import { QuestionTitle } from './questionTitle.entity';
 
-// type SearchOption = {
+// type SearchOptions = {
 //   keyword: string;
 //   isStar: boolean;
 //   isDeleted: boolean;
@@ -32,6 +32,16 @@ export class QuestionService {
   private newestId = 0;
 
   private readonly redis: Redis;
+
+  private readonly componentTypeToClass = {
+    questionCheckbox: QuestionCheckbox,
+    questionInfo: QuestionInfo,
+    questionInput: QuestionInput,
+    questionParagraph: QuestionParagraph,
+    questionRadio: QuestionRadio,
+    questionTextarea: QuestionTextarea,
+    questionTitle: QuestionTitle,
+  };
 
   constructor(
     @InjectRepository(Question) private readonly questionRepository: Repository<Question>,
@@ -51,8 +61,8 @@ export class QuestionService {
     this.redis = this.redisService.getClient();
   }
 
-  // 查询问卷列表，根据接收到的参数查询，SearchOption
-  async findAll(...args: any[]) {
+  // 查询问卷列表，根据接收到的参数查询，SearchOptions
+  async findAll(...searchOptions: any[]) {
     // 只需要特定列
     // const result= await this.questionRepository.find ({
     //   select: ['_id', 'title', 'isPublished', 'isStar', 'answerCount', 'createdAt', 'isDeleted'],
@@ -76,28 +86,28 @@ export class QuestionService {
       'question.isDeleted',
       `COUNT (*) OVER() as total`, // 添加 total 字段，用于返回数据总数
     ]);
-    args.forEach((arg) => {
+    searchOptions.forEach((searchOption) => {
       // page, 默认为 1
-      const page = arg.page || 1;
+      const page = searchOption.page || 1;
       // pageSize, 默认为 10
-      const pageSize = arg.pageSize || 10;
+      const pageSize = searchOption.pageSize || 10;
       // 计算起始索引
       const startIndex = (page - 1) * pageSize;
       // 设置 take 和 skip
       queryBuilder.take(pageSize).skip(startIndex);
       // isDeleted, 没有传值时，默认为 false
       // arg.isDeleted 是 string 类型
-      const isDeleted = arg.isDeleted === 'true' || false;
+      const isDeleted = searchOption.isDeleted === 'true' || false;
       queryBuilder.andWhere('question.isDeleted= :isDeleted', { isDeleted });
       // keyword
-      if (arg.keyword) {
-        queryBuilder.andWhere('question.title like :keyword', { keyword: `%${arg.keyword}%` });
+      if (searchOption.keyword) {
+        queryBuilder.andWhere('question.title like :keyword', { keyword: `%${searchOption.keyword}%` });
       }
 
       // isStar
-      if (arg.isStar !== undefined) {
+      if (searchOption.isStar !== undefined) {
         // arg.isStar 是 string 类型
-        const isStar = arg.isStar === 'true';
+        const isStar = searchOption.isStar === 'true';
         queryBuilder.andWhere('question.isStar= :isStar', { isStar });
       }
       // 根据需要添加其他查询条件
@@ -156,186 +166,95 @@ export class QuestionService {
     return this.newestId;
   }
 
+  // 保存问卷
   async saveQuestion(id: number, updateQuestionDto: UpdateQuestionDto) {
-    const question = await this.findOne(id);
-    // 数据库中没有该 id 时，则创建数据
+    const question = await this.findOne(+id);
     const { title, description, css, js, componentList, isStar, isPublished, isDeleted } = updateQuestionDto;
-    let result: Question;
-    let returnData: ReturnData;
-    if (!question) {
-      const questionTmp = new Question();
-      questionTmp._id = id;
-      questionTmp.title = title;
-      questionTmp.description = description;
-      questionTmp.css = css;
-      questionTmp.js = js;
-      // componentList 数据类似下面的格式
-      // [
-      //   {
-      //     fe_id: 'Z3xIwW5MSSzUR3CJHfLJm',
-      //     title: '标题',
-      //     type: 'questionTitle',
-      //     props: {
-      //       text: '一行标题',
-      //       level: 1,
-      //       isCenter: false,
-      //     },
-      //     isHidden: false,
-      //   },
-      //   {
-      //     fe_id: 'GiTImvo0uL75QrdspkWEv',
-      //     title: '单选',
-      //     type: 'questionRadio',
-      //     props: {
-      //       title: '单选标题',
-      //       isVertical: false,
-      //       options: [
-      //         {
-      //           value: 'item1',
-      //           text: '选项 1',
-      //         },
-      //         {
-      //           value: 'item2',
-      //           text: '选项 2',
-      //         },
-      //         {
-      //           value: 'item3',
-      //           text: '选项 3',
-      //         },
-      //       ],
-      //       value: '',
-      //     },
-      //   },
-      // ];
-      // componentList 转换成对象
-      const componentListObj = JSON.parse(JSON.stringify(componentList));
-      // 没有问卷，组件肯定不存在，先创建组件
-      const questionComponentList = [];
-      // 循环 componentListObj
-      componentListObj.forEach(async (component) => {
-        if (component.type === 'questionCheckbox') {
-          const componentTmp = new QuestionCheckbox();
-          componentTmp.fe_id = component.fe_id;
-          componentTmp.title = component.title || '';
-          componentTmp.isHidden = component.isHidden || false;
-          componentTmp.disabled = component.disabled || false;
-          const { props } = component;
-          const { propsTitle, propsIsVertical, propsOptions } = props;
-          componentTmp.props_title = propsTitle || '';
-          componentTmp.props_isVertical = propsIsVertical || false;
-          const optionsTmp = [];
-          propsOptions.forEach(async (option) => {
-            const optionTmp = new QuestionCheckboxOption();
-            optionTmp.value = option.value || '';
-            optionTmp.text = option.text || '';
-            optionTmp.checked = option.checked || false;
-            // 保存选项
-            const optResult = await this.questionCheckboxOptionRepository.save(optionTmp);
-            optionsTmp.push(optResult._id);
-          });
-          componentTmp.options = optionsTmp;
-          // 保存组件
-          const compResult = await this.questionCheckboxRepository.save(componentTmp);
-          // 增加组件 fe_id
-          questionComponentList.push(compResult.fe_id);
-        } else if (component.type === 'questionInfo') {
-          const componentTmp = new QuestionInfo();
-          componentTmp.fe_id = component.fe_id;
-          componentTmp.title = component.title || '';
-          componentTmp.isHidden = component.isHidden || false;
-          componentTmp.disabled = component.disabled || false;
-          const { props } = component;
-          const { propsTitle, propsDescription } = props;
-          componentTmp.props_title = propsTitle || '';
-          componentTmp.props_description = propsDescription || '';
-          const compResult = await this.questionInfoRepository.save(componentTmp);
-          questionComponentList.push(compResult.fe_id);
-        } else if (component.type === 'questionInput') {
-          const componentTmp = new QuestionInput();
-          componentTmp.fe_id = component.fe_id;
-          componentTmp.title = component.title || '';
-          componentTmp.isHidden = component.isHidden || false;
-          componentTmp.disabled = component.disabled || false;
-          const { props } = component;
-          const { propsTitle, propsPlaceholder } = props;
-          componentTmp.props_title = propsTitle || '';
-          componentTmp.props_placeholder = propsPlaceholder || '';
-          const compResult = await this.questionInputRepository.save(componentTmp);
-          questionComponentList.push(compResult.fe_id);
-        } else if (component.type === 'questionParagraph') {
-          const componentTmp = new QuestionParagraph();
-          componentTmp.fe_id = component.fe_id;
-          componentTmp.title = component.title || '';
-          componentTmp.isHidden = component.isHidden || false;
-          componentTmp.disabled = component.disabled || false;
-          const { props } = component;
-          const { propsText, propsIsCenter } = props;
-          componentTmp.props_text = propsText || '';
-          componentTmp.props_isCenter = propsIsCenter || false;
-          const compResult = await this.questionParagraphRepository.save(componentTmp);
-          questionComponentList.push(compResult.fe_id);
-        } else if (component.type === 'questionRadio') {
-          const componentTmp = new QuestionRadio();
-          componentTmp.fe_id = component.fe_id;
-          componentTmp.title = component.title || '';
-          componentTmp.isHidden = component.isHidden || false;
-          componentTmp.disabled = component.disabled || false;
-          const { props } = component;
-          const { propsTitle, propsIsVertical, propsValue, propsOptions } = props;
-          componentTmp.props_title = propsTitle || '';
-          componentTmp.props_isVertical = propsIsVertical || false;
-          componentTmp.props_value = propsValue || '';
-          const optionsTmp = [];
-          propsOptions.forEach(async (option) => {
-            const optionTmp = new QuestionRadioOption();
-            optionTmp.value = option.value || '';
-            optionTmp.text = option.text || '';
-            // 保存选项
-            const optResult = await this.questionRadioOptionRepository.save(optionTmp);
-            optionsTmp.push(optResult._id);
-          });
-          const compResult = await this.questionRadioRepository.save(componentTmp);
-          questionComponentList.push(compResult.fe_id);
-        } else if (component.type === 'questionTextarea') {
-          const componentTmp = new QuestionTextarea();
-          componentTmp.fe_id = component.fe_id;
-          componentTmp.title = component.title || '';
-          componentTmp.isHidden = component.isHidden || false;
-          componentTmp.disabled = component.disabled || false;
-          const { props } = component;
-          const { propsTitle, propsPlaceholder } = props;
-          componentTmp.props_title = propsTitle || '';
-          componentTmp.props_placeholder = propsPlaceholder || '';
-          const compResult = await this.questionTextareaRepository.save(componentTmp);
-          questionComponentList.push(compResult.fe_id);
-        } else if (component.type === 'questionTitle') {
-          const componentTmp = new QuestionTitle();
-          componentTmp.fe_id = component.fe_id;
-          componentTmp.title = component.title || '';
-          componentTmp.isHidden = component.isHidden || false;
-          componentTmp.disabled = component.disabled || false;
-          const { props } = component;
-          const { propsText, propsLevel, propsIsCenter } = props;
-          componentTmp.props_text = propsText || '';
-          componentTmp.props_level = propsLevel || 1;
-          componentTmp.props_isCenter = propsIsCenter || false;
-          const compResult = await this.questionTitleRepository.save(componentTmp);
-          questionComponentList.push(compResult.fe_id);
-        }
-      });
-      result = await this.questionRepository.save(questionTmp);
-    } else {
-      // 如果数据库中有该 id 时，更新数据
-      question.title = title;
-      question.description = description;
-      question.css = css;
-      question.js = js;
-      question.isStar = isStar;
-      question.isPublished = isPublished;
-      question.isDeleted = isDeleted;
 
-      result = await this.questionRepository.save(question);
+    // 如果数据库中没有该 id 时，则创建数据
+    if (!question) {
+      return this.createQuestion(id, title, description, css, js, componentList);
     }
+    // 如果数据库中有该 id 时，则更新数据
+    Object.assign(question, { title, description, css, js, isStar, isPublished, isDeleted });
+    return this.updateQuestion(question);
+  }
+
+  // 创建问卷
+  async createQuestion(id, title, description, css, js, componentList) {
+    const questionTmp = new Question();
+    Object.assign(questionTmp, { _id: id, title, description, css, js });
+
+    // componentList 转换成对象
+    const componentListObj = JSON.parse(JSON.stringify(componentList));
+    const questionComponentList = await this.createComponentList(componentListObj);
+
+    questionTmp.componentList = questionComponentList;
+    const result = await this.questionRepository.save(questionTmp);
+
+    return this.generateReturnData(result);
+  }
+
+  // 创建问卷组件
+  async createComponentList(componentListObj) {
+    return Promise.all(
+      componentListObj.map(async (component) => {
+        const ComponentClass = this.componentTypeToClass[component.type];
+        const componentTmp = new ComponentClass();
+        Object.assign(componentTmp, {
+          fe_id: component.fe_id,
+          title: component.title || '',
+          isHidden: component.isHidden || false,
+          disabled: component.disabled || false,
+        });
+
+        if (component.type === 'questionCheckbox' || component.type === 'questionRadio') {
+          const optionsTmp = await this.createOptions(component);
+          componentTmp.options = optionsTmp;
+        }
+
+        const componentRepository = this[`${component.type}Repository`];
+        const compResult = await componentRepository.save(componentTmp);
+        return compResult.fe_id;
+      }),
+    );
+  }
+
+  // 组件选项，只有 questionCheckbox/questionRadio 时才需要
+  async createOptions(component) {
+    return Promise.all(
+      component.props.propsOptions.map(async (option) => {
+        let optResult: QuestionCheckboxOption | QuestionRadioOption;
+        let optionTmp;
+        if (component.type === 'questionCheckbox') {
+          optionTmp = new QuestionCheckboxOption();
+          Object.assign(optionTmp, {
+            value: option.value || '',
+            text: option.text || '',
+            checked: option.checked || false, // 直接在这里设置 checked 属性
+          });
+          optResult = await this.questionCheckboxOptionRepository.save(optionTmp);
+        } else if (component.type === 'questionRadio') {
+          optionTmp = new QuestionRadioOption();
+          Object.assign(optionTmp, {
+            value: option.value || '',
+            text: option.text || '',
+          });
+          optResult = await this.questionRadioOptionRepository.save(optionTmp);
+        }
+
+        return optResult._id;
+      }),
+    );
+  }
+
+  async updateQuestion(question) {
+    const result = await this.questionRepository.save(question);
+    return this.generateReturnData(result);
+  }
+
+  generateReturnData(result) {
+    let returnData;
     if (result['_id']) {
       returnData = {
         errno: Errno.SUCCESS,
