@@ -40,9 +40,8 @@ export class QuestionController {
         msg: ErrMsg[Errno.ERRNO_12],
       };
     }
-    // 将 result 内 componentList 字段的值转为 JSON 格式
-    // result.componentList = JSON.parse(result.componentList);
-    result.componentList = [];
+    // componentList 为列表 id
+
     return {
       errno: Errno.SUCCESS,
       data: result,

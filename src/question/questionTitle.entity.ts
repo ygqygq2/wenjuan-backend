@@ -18,15 +18,17 @@ export class QuestionTitle extends Component {
   type: ComponentTypeNumber = ComponentTypeNumber.QUESTION_TITLE;
 
   // 组件内容
-  @Column()
   @Expose()
+  @Column({ default: '' })
   props_text: string;
 
   // 标题级别
+  @Expose()
   @Column({ default: QuestionTextareaLevel.Level1 })
   props_level: QuestionTextareaLevel;
 
   // 是否居中
+  @Expose()
   @Column({ default: false })
   props_isCenter: boolean;
 }

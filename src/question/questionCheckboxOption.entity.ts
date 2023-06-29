@@ -15,16 +15,18 @@ export class QuestionCheckboxOption {
   value: string;
 
   // 选项文本
+  @Expose()
   @Column({ default: '' })
   text: string;
 
   // 是否选中
+  @Expose()
   @Column({ default: false })
   checked: boolean;
 
   // 属于哪个多选框，和 QuestionCheckbox 的 fe_id 关联
-  @ManyToOne(() => QuestionCheckbox, (questionCheckbox) => questionCheckbox.options)
   @Expose()
+  @ManyToOne(() => QuestionCheckbox, (questionCheckbox) => questionCheckbox.options)
   @Column()
   fe_id: string;
 }

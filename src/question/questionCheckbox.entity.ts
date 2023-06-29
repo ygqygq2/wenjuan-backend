@@ -1,3 +1,4 @@
+import { Expose } from 'class-transformer';
 import { Column, Entity, JoinColumn, OneToMany } from 'typeorm';
 
 import { ComponentTypeNumber } from '@/enum/componentType.enum';
@@ -10,10 +11,12 @@ export class QuestionCheckbox extends Component {
   type: ComponentTypeNumber = ComponentTypeNumber.QUESTION_CHECKBOX;
 
   // 组件显示标题
+  @Expose()
   @Column({ default: '' })
   props_title: string;
 
   // 是否竖向
+  @Expose()
   @Column({ default: false })
   props_isVertical: boolean;
 

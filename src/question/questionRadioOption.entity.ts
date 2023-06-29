@@ -10,11 +10,12 @@ export class QuestionRadioOption {
   _id: string;
 
   // 选项值
-  @Column()
   @Expose()
+  @Column()
   value: string;
 
   // 选项文本
+  @Expose()
   @Column({ default: '' })
   text: string;
 

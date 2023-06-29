@@ -45,16 +45,23 @@ export class QuestionService {
 
   constructor(
     @InjectRepository(Question) private readonly questionRepository: Repository<Question>,
+    // @ts-ignore
     @InjectRepository(QuestionCheckbox) private readonly questionCheckboxRepository: Repository<QuestionCheckbox>,
     @InjectRepository(QuestionCheckboxOption)
     private readonly questionCheckboxOptionRepository: Repository<QuestionCheckboxOption>,
+    // @ts-ignore
     @InjectRepository(QuestionInfo) private readonly questionInfoRepository: Repository<QuestionInfo>,
+    // @ts-ignore
     @InjectRepository(QuestionInput) private readonly questionInputRepository: Repository<QuestionInput>,
+    // @ts-ignore
     @InjectRepository(QuestionParagraph) private readonly questionParagraphRepository: Repository<QuestionParagraph>,
+    // @ts-ignore
     @InjectRepository(QuestionRadio) private readonly questionRadioRepository: Repository<QuestionRadio>,
     @InjectRepository(QuestionRadioOption)
     private readonly questionRadioOptionRepository: Repository<QuestionRadioOption>,
+    // @ts-ignore
     @InjectRepository(QuestionTextarea) private readonly questionTextareaRepository: Repository<QuestionTextarea>,
+    // @ts-ignore
     @InjectRepository(QuestionTitle) private readonly questionTitleRepository: Repository<QuestionTitle>,
     private readonly redisService: RedisService,
   ) {
@@ -142,6 +149,7 @@ export class QuestionService {
       where: {
         _id: id,
       },
+      relations: ['componentList'],
     });
   }
 
@@ -169,7 +177,16 @@ export class QuestionService {
   // 保存问卷
   async saveQuestion(id: number, updateQuestionDto: UpdateQuestionDto) {
     const question = await this.findOne(+id);
-    const { title, description, css, js, componentList, isStar, isPublished, isDeleted } = updateQuestionDto;
+    const {
+      title,
+      description = '',
+      css = '',
+      js = '',
+      componentList = '',
+      isStar = 'false',
+      isPublished = 'false',
+      isDeleted = 'false',
+    } = updateQuestionDto;
 
     // 如果数据库中没有该 id 时，则创建数据
     if (!question) {
@@ -177,11 +194,11 @@ export class QuestionService {
     }
     // 如果数据库中有该 id 时，则更新数据
     Object.assign(question, { title, description, css, js, isStar, isPublished, isDeleted });
-    return this.updateQuestion(question);
+    return this.updateQuestion(question, componentList);
   }
 
   // 创建问卷
-  async createQuestion(id, title, description, css, js, componentList) {
+  async createQuestion(id: number, title: string, description: string, css: string, js: string, componentList: string) {
     const questionTmp = new Question();
     Object.assign(questionTmp, { _id: id, title, description, css, js });
 
@@ -196,14 +213,21 @@ export class QuestionService {
   }
 
   // 创建问卷组件
-  async createComponentList(componentListObj) {
+  async createComponentList(componentListObj: any[]) {
     return Promise.all(
       componentListObj.map(async (component) => {
         const ComponentClass = this.componentTypeToClass[component.type];
         const componentTmp = new ComponentClass();
+        const { props } = component;
+        // props 转换成对象，用于保存到数据库，要加 props_
+        props.map((prop) => {
+          return Object.assign(componentTmp, {
+            [`props_${prop.name}`]: prop.value,
+          });
+        });
         Object.assign(componentTmp, {
           fe_id: component.fe_id,
-          title: component.title || '',
+          type: component.type,
           isHidden: component.isHidden || false,
           disabled: component.disabled || false,
         });
@@ -212,9 +236,68 @@ export class QuestionService {
           const optionsTmp = await this.createOptions(component);
           componentTmp.options = optionsTmp;
         }
-
         const componentRepository = this[`${component.type}Repository`];
         const compResult = await componentRepository.save(componentTmp);
+        return compResult.fe_id;
+      }),
+    );
+  }
+
+  // 更新问卷组件
+  async updateComponentList(oldComponentList, componentListObj: any[]) {
+    // 创建一个新的组件 ID 列表
+    const newComponentIds = componentListObj.map((component) => component.fe_id);
+    const existComponentIds = [];
+
+    // 要删除的旧组件
+    const deleteComponents = oldComponentList.filter((oldComponent) => !newComponentIds.includes(oldComponent.fe_id));
+
+    // 删除旧组件
+    for (const oldComponent of deleteComponents) {
+      const componentRepository = this[`${oldComponent.type}Repository`];
+      await componentRepository.remove(oldComponent._id);
+    }
+
+    // 更新新组件
+    const updatedComponentList = await componentListObj.reduce(async (accPromise, component) => {
+      const acc = await accPromise;
+      const ComponentClass = this.componentTypeToClass[component.type];
+      const componentTmp = new ComponentClass();
+      const { props } = component;
+      Object.keys(props).forEach((propName) => {
+        const prefixedPropName = `props_${propName}`;
+        componentTmp[prefixedPropName] = props[propName];
+      });
+      Object.assign(componentTmp, {
+        title: component.title,
+        fe_id: component.fe_id,
+        typeText: component.type,
+        isHidden: component.isHidden || false,
+        disabled: component.disabled || false,
+      });
+
+      if (component.type === 'questionCheckbox' || component.type === 'questionRadio') {
+        if (existComponentIds.includes(component.fe_id)) {
+          const optionsTmp = await this.updateOptions(component);
+          componentTmp.options = optionsTmp;
+        } else {
+          const optionsTmp = await this.createOptions(component);
+          componentTmp.options = optionsTmp;
+        }
+      }
+
+      acc.push(componentTmp);
+      return acc;
+    }, []);
+
+    await Promise.all(
+      updatedComponentList.map(async (component) => {
+        console.log(
+          '🚀 ~ file: question.service.ts:297 ~ QuestionService ~ updatedComponentList.map ~ component:',
+          component,
+        );
+        const componentRepository = this[`${component.typeText}Repository`];
+        const compResult = await componentRepository.save(component);
         return compResult.fe_id;
       }),
     );
@@ -248,11 +331,50 @@ export class QuestionService {
     );
   }
 
-  async updateQuestion(question) {
+  // 更新选项数据
+  async updateOptions(component) {
+    // 判断选项数据是否已经存在，存在则更新，不存在则删除
+    // 获取旧的选项数据
+    return Promise.all(
+      component.props.propsOptions.map(async (option) => {
+        let optResult: QuestionCheckboxOption | QuestionRadioOption;
+        let optionTmp;
+        if (component.type === 'questionCheckbox') {
+          optionTmp = new QuestionCheckboxOption();
+          Object.assign(optionTmp, {
+            value: option.value || '',
+            text: option.text || '',
+            checked: option.checked || false, // 直接在这里设置 checked 属性
+          });
+          optResult = await this.questionCheckboxOptionRepository.save(optionTmp);
+        } else if (component.type === 'questionRadio') {
+          optionTmp = new QuestionRadioOption();
+          Object.assign(optionTmp, {
+            value: option.value || '',
+            text: option.text || '',
+          });
+          optResult = await this.questionRadioOptionRepository.save(optionTmp);
+        }
+
+        return optResult._id;
+      }),
+    );
+  }
+
+  // 更新问卷
+  async updateQuestion(question, componentList: string) {
+    const oldComponentList = question.componentList || [];
+    // componentList 转换成对象
+    const componentListObj = JSON.parse(JSON.stringify(componentList)) || [];
+    const questionComponentList = await this.updateComponentList(oldComponentList, componentListObj);
+
+    question.componentList = questionComponentList;
     const result = await this.questionRepository.save(question);
+
     return this.generateReturnData(result);
   }
 
+  // 生成返回数据
   generateReturnData(result) {
     let returnData;
     if (result['_id']) {

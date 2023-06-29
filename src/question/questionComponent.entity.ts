@@ -12,6 +12,7 @@ export abstract class Component extends BaseEntity {
   fe_id: string;
 
   // type
+  @Expose()
   @Column({
     type: 'enum',
     enum: ComponentTypeNumber,
@@ -20,13 +21,16 @@ export abstract class Component extends BaseEntity {
   type: ComponentTypeNumber;
 
   // 组件名称
+  @Expose()
   @Column({ default: '' })
   title: string;
 
   // 是否隐藏
+  @Expose()
   @Column({ default: false })
   isHidden: boolean;
 
+  @Expose()
   @Column({ default: false })
   disabled: boolean;
 

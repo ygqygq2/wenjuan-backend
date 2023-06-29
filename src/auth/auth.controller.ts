@@ -36,7 +36,7 @@ export class AuthController {
     };
   }
 
-  @Post('/logout')
+  @Post('/register')
   signup(@Body() dto: SigninUserDto) {
     const { username, password } = dto;
     return this.authService.signup(username, password);

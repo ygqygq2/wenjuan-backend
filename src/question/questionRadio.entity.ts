@@ -1,3 +1,4 @@
+import { Expose } from 'class-transformer';
 import { Column, Entity, JoinColumn, OneToMany } from 'typeorm';
 
 import { ComponentTypeNumber } from '@/enum/componentType.enum';
@@ -10,13 +11,16 @@ export class QuestionRadio extends Component {
   type: ComponentTypeNumber = ComponentTypeNumber.QUESTION_RADIO;
 
   // 是否竖向
+  @Expose()
   @Column({ default: false })
   props_isVertical: boolean;
 
   // 值
+  @Expose()
   @Column({ default: '' })
   props_value: string;
 
+  @Expose()
   @Column({ default: '' })
   props_title: string;
 
