@@ -1,7 +1,14 @@
 import { Expose } from 'class-transformer';
 import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
+import { QuestionCheckbox } from './questionCheckbox.entity';
 import { Component } from './questionComponent.entity';
+import { QuestionInfo } from './questionInfo.entity';
+import { QuestionInput } from './questionInput.entity';
+import { QuestionParagraph } from './questionParagraph.entity';
+import { QuestionRadio } from './questionRadio.entity';
+import { QuestionTextarea } from './questionTextarea.entity';
+import { QuestionTitle } from './questionTitle.entity';
 
 @Entity()
 export class Question {
@@ -40,13 +47,6 @@ export class Question {
   @Column({ default: false })
   isPublished: boolean;
 
-  @Expose()
-  @OneToMany(() => Component, (component) => component.question)
-  @JoinColumn()
-  componentList: Component[];
-
-  // 创建时间，自动使用数据库插入时间
-  @Expose()
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
@@ -59,4 +59,17 @@ export class Question {
   @Expose()
   @Column({ default: 0 })
   answerCount: number;
+
+  @Expose()
+  @OneToMany(() => Component, (component) => component.question)
+  @JoinColumn()
+  componentList: (
+    | QuestionCheckbox
+    | QuestionInfo
+    | QuestionInput
+    | QuestionParagraph
+    | QuestionRadio
+    | QuestionTextarea
+    | QuestionTitle
+  )[];
 }

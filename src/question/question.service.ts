@@ -287,20 +287,23 @@ export class QuestionService {
       }
 
       acc.push(componentTmp);
+      console.log('🚀 ~ file: question.service.ts:290 ~ QuestionService ~ updatedComponentList ~ acc:', acc);
       return acc;
     }, []);
 
-    await Promise.all(
-      updatedComponentList.map(async (component) => {
-        console.log(
-          '🚀 ~ file: question.service.ts:297 ~ QuestionService ~ updatedComponentList.map ~ component:',
-          component,
-        );
-        const componentRepository = this[`${component.typeText}Repository`];
-        const compResult = await componentRepository.save(component);
-        return compResult.fe_id;
-      }),
-    );
+    await this.questionRepository.save(updatedComponentList);
+    return updatedComponentList;
+    // await Promise.all(
+    //   updatedComponentList.map(async (component) => {
+    //     console.log(
+    //       '🚀 ~ file: question.service.ts:297 ~ QuestionService ~ updatedComponentList.map ~ component:',
+    //       component,
+    //     );
+    //     const componentRepository = this[`${component.typeText}Repository`];
+    //     const compResult = await componentRepository.save(component);
+    //     return compResult.fe_id;
+    //   }),
+    // );
   }
 
   // 组件选项，只有 questionCheckbox/questionRadio 时才需要
@@ -366,10 +369,20 @@ export class QuestionService {
     const oldComponentList = question.componentList || [];
     // componentList 转换成对象
     const componentListObj = JSON.parse(JSON.stringify(componentList)) || [];
+    console.log(
+      '🚀 ~ file: question.service.ts:369 ~ QuestionService ~ updateQuestion ~ componentListObj:',
+      componentListObj,
+    );
     const questionComponentList = await this.updateComponentList(oldComponentList, componentListObj);
+    console.log(
+      '🚀 ~ file: question.service.ts:370 ~ QuestionService ~ updateQuestion ~ questionComponentList:',
+      questionComponentList,
+    );
 
     question.componentList = questionComponentList;
+    console.log('🚀 ~ file: question.service.ts:373 ~ QuestionService ~ updateQuestion ~ question:', question);
     const result = await this.questionRepository.save(question);
+    console.log('🚀 ~ file: question.service.ts:378 ~ QuestionService ~ updateQuestion ~ result:', result);
 
     return this.generateReturnData(result);
   }
