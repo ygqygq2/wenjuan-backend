@@ -1,14 +1,5 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
-
-import { QuestionCheckbox } from './questionCheckbox.entity';
-import { Component } from './questionComponent.entity';
-import { QuestionInfo } from './questionInfo.entity';
-import { QuestionInput } from './questionInput.entity';
-import { QuestionParagraph } from './questionParagraph.entity';
-import { QuestionRadio } from './questionRadio.entity';
-import { QuestionTextarea } from './questionTextarea.entity';
-import { QuestionTitle } from './questionTitle.entity';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
 export class Question {
@@ -60,16 +51,9 @@ export class Question {
   @Column({ default: 0 })
   answerCount: number;
 
+  // 保存组件 fe_id 的列表，格式：[{'9EsDAD8RSkLiooaOLCyFl': 2}]
   @Expose()
-  @OneToMany(() => Component, (component) => component.question)
-  @JoinColumn()
-  componentList: (
-    | QuestionCheckbox
-    | QuestionInfo
-    | QuestionInput
-    | QuestionParagraph
-    | QuestionRadio
-    | QuestionTextarea
-    | QuestionTitle
-  )[];
+  @Column({ type: 'simple-array', default: '' })
+  // @Column({type: 'simple-array', array: true, default: []})
+  componentList: string[];
 }

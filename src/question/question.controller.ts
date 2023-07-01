@@ -33,6 +33,7 @@ export class QuestionController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const result = await this.questionService.findOne(+id);
+    console.log('🚀 ~ file: question.controller.ts:36 ~ QuestionController ~ findOne ~ result:', result);
     // 判断是否存在
     if (!result) {
       return {
