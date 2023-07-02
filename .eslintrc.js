@@ -56,6 +56,7 @@ module.exports = {
     'no-plusplus': 0,
     'no-lonely-if': 0,
     'no-bitwise': ['error', { allow: ['~'] }],
+    "no-shadow": "off",
     /* ********************************** Module Import ********************************** */
     'import/no-absolute-path': 0,
     'import/extensions': 0,
@@ -122,6 +123,7 @@ module.exports = {
     '@typescript-eslint/no-unsafe-call': 0,
     '@typescript-eslint/no-unsafe-argument': 0,
     '@typescript-eslint/ban-ts-comment': 0,
+    "@typescript-eslint/no-shadow": "warn",
     /* ********************************** 其它规则 ********************************** */
     'dot-notation': 'off',
     '@typescript-eslint/dot-notation': 'off',
