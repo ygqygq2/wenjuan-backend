@@ -53,7 +53,9 @@ export class Question {
 
   // 保存组件 fe_id 的列表，格式：[{'9EsDAD8RSkLiooaOLCyFl': 2}]
   @Expose()
-  @Column({ type: 'simple-array', default: '' })
-  // @Column({type: 'simple-array', array: true, default: []})
+  @Column({
+    type: 'simple-array',
+    nullable: true,
+  })
   componentList: string[];
 }

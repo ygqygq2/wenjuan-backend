@@ -31,11 +31,10 @@ export class QuestionController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const result = await this.questionService.findOne(+id);
-    console.log('🚀 ~ file: question.controller.ts:36 ~ QuestionController ~ findOne ~ result:', result);
+  async findOneWithComponents(@Param('id') id: string) {
+    const questionData = await this.questionService.findOneWithComponents(+id);
     // 判断是否存在
-    if (!result) {
+    if (!questionData) {
       return {
         errno: Errno.ERRNO_12,
         msg: ErrMsg[Errno.ERRNO_12],
@@ -45,7 +44,7 @@ export class QuestionController {
 
     return {
       errno: Errno.SUCCESS,
-      data: result,
+      data: questionData,
     };
   }
 
