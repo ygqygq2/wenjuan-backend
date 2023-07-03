@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import Redis from 'ioredis';
 import { Repository } from 'typeorm';
 
-import { ComponentNumberToType, ComponentTypeToNumber } from '@/enum/componentType.enum';
+import { ComponentNumberToType, ComponentTypeNumber, ComponentTypeToNumber } from '@/enum/componentType.enum';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -158,38 +158,42 @@ export class QuestionService {
     return question;
   }
 
+  /**
+   * 获取组件列表
+   * @param question - 问卷实体
+   */
+  getComponentList(question: Question): { key: string; value: number }[] {
+    const dbComponentList = JSON.parse(`[${question.componentList.join(',')}]`).flat() || [];
+    return dbComponentList;
+  }
+
   async findOneWithComponents(id: number) {
     const question = await this.findOne(+id);
     if (!question) {
       return null;
     }
-    const dbComponentList = JSON.parse(`[${question.componentList.join(',')}]`).flat() || [];
+    const dbComponentList = this.getComponentList(question);
     const componentList = await Promise.all(
-      dbComponentList.map(async (item) => {
+      dbComponentList.map(async (item: { key: string; value: number }) => {
         // eslint-disable-next-line @typescript-eslint/no-shadow
-        const [id, type] = Object.entries(item)[0] as any as [string, number];
+        const [id, type] = Object.entries(item)[0];
         const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
         const compResult = await componentRepository.findOne({
           where: {
             fe_id: id,
           },
         });
-        console.log(
-          '🚀 ~ file: question.service.ts:177 ~ QuestionService ~ dbComponentList.map ~ compResult:',
-          compResult,
-        );
         // 数据里面的 props_aa: bb 转成 {props: {aa: bb}}
-        const processedData = compResult.map((item) => {
-          const props = {};
-          Object.entries(item).forEach(([key, value]) => {
-            if (key.startsWith('props_')) {
-              const propName = key.replace('props_', '');
-              props[propName] = value;
-            }
-          });
-          return { ...item, props };
+        const props = {};
+        Object.keys(compResult).forEach((key) => {
+          if (key.startsWith('props_')) {
+            const propKey = key.replace('props_', '');
+            props[propKey] = compResult[key];
+            delete compResult[key]; // 删除原来的 props_xxx 属性
+          }
         });
-        return processedData;
+        const rest = { ...compResult, props, type: `${ComponentNumberToType[type]}` };
+        return rest;
       }),
     );
     const flatComponentList = componentList.flat(); // 平铺嵌套数组
@@ -227,7 +231,7 @@ export class QuestionService {
       description = '',
       css = '',
       js = '',
-      componentList = '',
+      componentList = [],
       isStar = 'false',
       isPublished = 'false',
       isDeleted = 'false',
@@ -243,13 +247,12 @@ export class QuestionService {
   }
 
   // 创建问卷
-  async createQuestion(id: number, title: string, description: string, css: string, js: string, componentList: string) {
+  async createQuestion(id: number, title: string, description: string, css: string, js: string, componentList: any[]) {
     const questionTmp = new Question();
     Object.assign(questionTmp, { _id: id, title, description, css, js });
 
     // componentList 转换成对象
-    const componentListObj = JSON.parse(JSON.stringify(componentList));
-    const questionComponentList = await this.createComponentList(componentListObj);
+    const questionComponentList = await this.createComponentList(componentList);
 
     questionTmp.componentList = questionComponentList;
     const result = await this.questionRepository.save(questionTmp);
@@ -258,9 +261,9 @@ export class QuestionService {
   }
 
   // 创建问卷组件
-  async createComponentList(componentListObj: any[]) {
+  async createComponentList(componentList: any[]) {
     return Promise.all(
-      componentListObj.map(async (component) => {
+      componentList.map(async (component) => {
         const ComponentClass = this.componentTypeToClass[component.type];
         const componentTmp = new ComponentClass();
         const { props } = component;
@@ -288,46 +291,65 @@ export class QuestionService {
     );
   }
 
-  // 更新问卷组件
-  async updateComponentList(question: Question, oldComponentList: any[], componentListObj: any[]) {
+  /**
+   * 更新问卷组件
+   * @param question - 查询出来的问卷实体
+   * @param oldComponentList - 数据库中存的旧组件列表
+   * @param componentList - 前端传过来的组件列表
+   * @returns
+   */
+  async updateComponentList(question: Question, oldComponentList: any[], componentList: any[]) {
     // 创建一个新的组件 ID 列表
-    const newComponentIds = componentListObj.map((component) => ({
+    const newComponentIds: Array<{ [fe_id: string]: number }> = componentList.map((component) => ({
       [`${component.fe_id}`]: ComponentTypeToNumber[component.type],
     }));
 
     // 已经存在的 ID 列表，newComponentIds 存在于 oldComponentList 中的元素
-    const existComponentIds = newComponentIds.filter((item) => {
-      return Object.keys(item).some((key) => {
-        return oldComponentList.some((oldItem: { [x: string]: number }) => oldItem[key] === item[key]);
+    const existComponentIds: Array<{ [fe_id: string]: number }> = newComponentIds.filter((item) => {
+      return Object.keys(item).some((key: string) => {
+        return oldComponentList.some((oldItem: { [fe_id: string]: number }) => oldItem[key] === item[key]);
       });
     });
 
     // 要删除的旧组件
-    const deleteComponentIds = newComponentIds.filter((item) => {
-      return !Object.keys(item).some((key) => {
-        return oldComponentList.some((oldItem: { [x: string]: number }) => oldItem[key] === item[key]);
+    const deleteComponentIds: Array<{ [fe_id: string]: number }> = newComponentIds.filter((item) => {
+      return !Object.keys(item).some((key: string) => {
+        return oldComponentList.some((oldItem: { [fe_id: string]: number }) => oldItem[key] === item[key]);
       });
     });
 
     // 删除旧组件
-    for (const deleteId of deleteComponentIds) {
-      const [id, type] = Object.entries(deleteId)[0] as any as [string, number];
-      const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
-      const componentToRemove = await componentRepository.findOne({
-        where: {
-          fe_id: id,
-        },
-      });
-      if (componentToRemove) {
-        await componentRepository.remove(componentToRemove);
-      }
-    }
+    await this.removeWithComponents(deleteComponentIds);
 
-    // 更新新组件
-    const updatedComponentListObj = await componentListObj.reduce(async (accPromise, component) => {
+    // 获取已更新的组件实体列表
+    const updatedComponentListObj: Array<
+      | QuestionCheckbox
+      | QuestionInfo
+      | QuestionInput
+      | QuestionParagraph
+      | QuestionRadio
+      | QuestionTextarea
+      | QuestionTitle
+    > = await componentList.reduce(async (accPromise, component) => {
       const acc = await accPromise;
-      const ComponentClass = this.componentTypeToClass[component.type];
-      const componentTmp = new ComponentClass();
+      const ComponentClass:
+        | typeof QuestionCheckbox
+        | typeof QuestionInfo
+        | typeof QuestionInput
+        | typeof QuestionParagraph
+        | typeof QuestionRadio
+        | typeof QuestionTextarea
+        | typeof QuestionTitle = this.componentTypeToClass[component.type];
+      const componentTmp = new (ComponentClass as new () =>
+        | QuestionCheckbox
+        | QuestionInfo
+        | QuestionInput
+        | QuestionParagraph
+        | QuestionRadio
+        | QuestionTextarea
+        | QuestionTitle)();
+      // 提取出前端传过来的组件 props 对象
+      // 将 {props: {aa: bb}} 转换成 {props_aa: bb}
       const { props } = component;
       Object.keys(props).forEach((propName) => {
         const prefixedPropName = `props_${propName}`;
@@ -342,7 +364,8 @@ export class QuestionService {
         question,
       });
 
-      if (component.type === 'questionCheckbox' || component.type === 'questionRadio') {
+      // 有 options 的特殊组件
+      if (componentTmp instanceof QuestionCheckbox || componentTmp instanceof QuestionRadio) {
         if (existComponentIds.includes(component.fe_id)) {
           const optionsTmp = await this.updateOptions(component);
           componentTmp.options = optionsTmp;
@@ -352,19 +375,27 @@ export class QuestionService {
         }
       }
 
-      const componentRepository = this[`${ComponentNumberToType[componentTmp.type]}Repository`];
+      // 组件 repository
+      const componentRepository = this[`${ComponentNumberToType[componentTmp.type]}Repository`] as Repository<
+        QuestionCheckbox &
+          QuestionInfo &
+          QuestionInput &
+          QuestionParagraph &
+          QuestionRadio &
+          QuestionTextarea &
+          QuestionTitle
+      >;
+      // 保存组件到数据库
       await componentRepository.save(componentTmp);
-      console.log(
-        '🚀 ~ file: question.service.ts:335 ~ QuestionService ~ updatedComponentListObj ~ componentTmp:',
-        componentTmp,
-      );
       acc.push(componentTmp);
       return acc;
     }, []);
 
-    const updatedComponentList = updatedComponentListObj.map((item) => ({
-      [`${item.fe_id}`]: item.type,
-    }));
+    const updatedComponentList: Array<{ [fe_id: string]: ComponentTypeNumber }> = updatedComponentListObj.map(
+      (item) => ({
+        [item.fe_id]: item.type,
+      }),
+    );
     // mysql 不支持动态实体关系
     // const updatedComponentList = updatedComponentListObj;
     return updatedComponentList;
@@ -428,14 +459,40 @@ export class QuestionService {
     );
   }
 
-  // 更新问卷
-  async updateQuestion(question, componentList: string) {
+  // 将前端 componentList 转换成数据库中的组件列表
+  async convertComponentList(componentList: any[]): Promise<{ [fe_id: string]: number }[]> {
+    return componentList.map((component) => ({
+      [component.fe_id]: ComponentTypeToNumber[component.type],
+    }));
+  }
+
+  /**
+   * 更新问卷
+   * @param question - 问卷实体
+   * @param componentList - 前端传过来的组件列表
+   * @returns
+   */
+  async updateQuestion(question: Question, componentList: any) {
+    // 数据库中存的组件列表
     const oldComponentList = question.componentList || [];
-    // componentList 转换成对象
-    const componentListObj = JSON.parse(JSON.stringify(componentList)) || [];
-    const questionComponentList = await this.updateComponentList(question, oldComponentList, componentListObj);
-    // questionComponentList 是一个数组，需要转换成字符串
-    question.componentList = JSON.stringify(questionComponentList);
+    console.log(
+      '🚀 ~ file: question.service.ts:478 ~ QuestionService ~ updateQuestion ~ oldComponentList:',
+      oldComponentList,
+    );
+    const frontendComponentList = await this.convertComponentList(componentList);
+    const frontendComponentListStr = frontendComponentList.map((component) => JSON.stringify(component));
+    console.log(
+      '🚀 ~ file: question.service.ts:481 ~ QuestionService ~ updateQuestion ~ frontendComponentListStr:',
+      frontendComponentListStr,
+    );
+
+    // 判断 oldComponentList frontendComponentListStr 是否相等
+    if (oldComponentList !== frontendComponentListStr) {
+      const questionComponentList = await this.updateComponentList(question, oldComponentList, componentList);
+      const questionComponentListStr = questionComponentList.map((component) => JSON.stringify(component));
+      question.componentList = questionComponentListStr;
+    }
+    // questionComponentList 是一个数组，需要里面的元素转换成字符串
     const result = await this.questionRepository.save(question);
     return this.generateReturnData(result);
   }
@@ -497,7 +554,63 @@ export class QuestionService {
    * 批量删除
    * @param ids - 问卷 id 数组
    */
-  removeByIds(ids: number[]) {
-    return this.questionRepository.delete(ids);
+  async removeByIds(ids: number[]) {
+    type RemoveFailedId = {
+      id: number;
+      title: string;
+    };
+
+    const removeFailedIds: RemoveFailedId[] = [];
+
+    for (const id of ids) {
+      const question = await this.findOne(+id);
+      console.log('🚀 ~ file: question.service.ts:503 ~ QuestionService ~ removeByIds ~ question:', question);
+      if (question) {
+        const dbComponentList = this.getComponentList(question);
+        console.log(
+          '🚀 ~ file: question.service.ts:498 ~ QuestionService ~ removeByIds ~ dbComponentList:',
+          dbComponentList,
+        );
+        const removeComponentResult = await this.removeWithComponents(dbComponentList);
+        if (!removeComponentResult) {
+          removeFailedIds.push({
+            id,
+            title: question.title,
+          });
+          // 跳出此次循环
+          break;
+        }
+
+        const removeQuestionResult = await this.questionRepository.remove(question);
+        if (!removeQuestionResult) {
+          removeFailedIds.push({
+            id,
+            title: question.title,
+          });
+        }
+      }
+    }
+    return removeFailedIds;
+  }
+
+  /**
+   * 删除组件
+   * @param id - 组件 id
+   */
+  async removeWithComponents(deleteComponentIds) {
+    // 删除旧组件
+    const promises = deleteComponentIds.map(async (deleteId) => {
+      const [id, type] = Object.entries(deleteId)[0] as any as [string, number];
+      const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
+      const componentToRemove = await componentRepository.findOne({
+        where: {
+          fe_id: id,
+        },
+      });
+      if (componentToRemove) {
+        await componentRepository.remove(componentToRemove);
+      }
+    });
+    return Promise.all(promises);
   }
 }

@@ -19,7 +19,7 @@ export class UpdateQuestionDto {
 
   // 组件列表
   @IsOptional()
-  componentList?: string;
+  componentList?: any[];
 
   @IsBoolean()
   @IsOptional()

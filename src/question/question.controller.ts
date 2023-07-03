@@ -68,14 +68,14 @@ export class QuestionController {
     const deleteResult = await this.questionService.removeByIds(ids);
     let returnData: ReturnData;
     // 判断是否删除成功
-    if (deleteResult.affected === ids.length) {
+    if (deleteResult.length <= 0) {
       returnData = {
         errno: Errno.SUCCESS,
       };
     } else {
       returnData = {
         errno: Errno.ERRNO_13,
-        msg: ErrMsg[Errno.ERRNO_13],
+        msg: `${ErrMsg[Errno.ERRNO_13]}列表：${deleteResult}`,
       };
     }
     return returnData;
