@@ -163,7 +163,7 @@ export class QuestionService {
    * 获取组件列表
    * @param question - 问卷实体
    */
-  getComponentList(question: Question): { key: string; value: number }[] {
+  getComponentList(question: Question): { [fe_id: string]: number }[] {
     const dbComponentList = JSON.parse(`[${question.componentList.join(',')}]`).flat() || [];
     return dbComponentList;
   }
@@ -175,7 +175,7 @@ export class QuestionService {
     }
     const dbComponentList = this.getComponentList(question);
     const componentList = await Promise.all(
-      dbComponentList.map(async (item: { key: string; value: number }) => {
+      dbComponentList.map(async (item: { [fe_id: string]: number }) => {
         // eslint-disable-next-line @typescript-eslint/no-shadow
         const [id, type] = Object.entries(item)[0];
         const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
@@ -592,10 +592,14 @@ export class QuestionService {
    * 删除组件
    * @param id - 组件 id
    */
-  async removeWithComponents(deleteComponentIds) {
+  async removeWithComponents(
+    deleteComponentIds: {
+      [fe_id: string]: number;
+    }[],
+  ) {
     // 删除旧组件
-    const promises = deleteComponentIds.map(async (deleteId) => {
-      const [id, type] = Object.entries(deleteId)[0] as any as [string, number];
+    const promises = deleteComponentIds.map(async (deleteId: { [fe_id: string]: number }) => {
+      const [id, type] = Object.entries(deleteId)[0];
       const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
       const componentToRemove = await componentRepository.findOne({
         where: {
