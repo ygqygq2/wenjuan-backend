@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import Redis from 'ioredis';
+import isEqual from 'lodash/isEqual';
 import { Repository } from 'typeorm';
 
 import { ComponentNumberToType, ComponentTypeNumber, ComponentTypeToNumber } from '@/enum/componentType.enum';
@@ -231,11 +232,14 @@ export class QuestionService {
       description = '',
       css = '',
       js = '',
-      componentList = [],
+      componentList,
       isStar = 'false',
       isPublished = 'false',
       isDeleted = 'false',
     } = updateQuestionDto;
+
+    // 如果 componentList 为 undefined，则将其置为 undefined
+    const componentListObj = componentList === undefined ? undefined : [...componentList];
 
     // 如果数据库中没有该 id 时，则创建数据
     if (!question) {
@@ -243,7 +247,7 @@ export class QuestionService {
     }
     // 如果数据库中有该 id 时，则更新数据
     Object.assign(question, { title, description, css, js, isStar, isPublished, isDeleted });
-    return this.updateQuestion(question, componentList);
+    return this.updateQuestion(question, componentListObj);
   }
 
   // 创建问卷
@@ -472,27 +476,18 @@ export class QuestionService {
    * @param componentList - 前端传过来的组件列表
    * @returns
    */
-  async updateQuestion(question: Question, componentList: any) {
-    // 数据库中存的组件列表
-    const oldComponentList = question.componentList || [];
-    console.log(
-      '🚀 ~ file: question.service.ts:478 ~ QuestionService ~ updateQuestion ~ oldComponentList:',
-      oldComponentList,
-    );
-    const frontendComponentList = await this.convertComponentList(componentList);
-    const frontendComponentListStr = frontendComponentList.map((component) => JSON.stringify(component));
-    console.log(
-      '🚀 ~ file: question.service.ts:481 ~ QuestionService ~ updateQuestion ~ frontendComponentListStr:',
-      frontendComponentListStr,
-    );
+  async updateQuestion(question: Question, componentList?: any) {
+    if (componentList !== undefined) {
+      const oldComponentList = question.componentList || [];
+      const frontendComponentList = await this.convertComponentList(componentList);
+      const frontendComponentListStr = frontendComponentList.map((component) => JSON.stringify(component));
 
-    // 判断 oldComponentList frontendComponentListStr 是否相等
-    if (oldComponentList !== frontendComponentListStr) {
-      const questionComponentList = await this.updateComponentList(question, oldComponentList, componentList);
-      const questionComponentListStr = questionComponentList.map((component) => JSON.stringify(component));
-      question.componentList = questionComponentListStr;
+      if (!isEqual(oldComponentList.sort(), frontendComponentListStr.sort())) {
+        const questionComponentList = await this.updateComponentList(question, oldComponentList, componentList);
+        question.componentList = questionComponentList.map((component) => JSON.stringify(component));
+      }
     }
-    // questionComponentList 是一个数组，需要里面的元素转换成字符串
+
     const result = await this.questionRepository.save(question);
     return this.generateReturnData(result);
   }
