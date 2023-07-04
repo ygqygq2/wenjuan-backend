@@ -21,13 +21,14 @@ import { QuestionRadioOption } from './questionRadioOption.entity';
 import { QuestionTextarea } from './questionTextarea.entity';
 import { QuestionTitle } from './questionTitle.entity';
 
-// type SearchOptions = {
-//   keyword: string;
-//   isStar: boolean;
-//   isDeleted: boolean;
-//   page: number;
-//   pageSize: number;
-// };
+// 因为是前端传值过来的，都是字符串类型
+type SearchOptions = {
+  keyword?: string;
+  isStar?: string;
+  isDeleted?: string;
+  page?: number;
+  pageSize?: number;
+};
 
 @Injectable()
 export class QuestionService {
@@ -71,18 +72,8 @@ export class QuestionService {
   }
 
   // 查询问卷列表，根据接收到的参数查询，SearchOptions
-  async findAll(...searchOptions: any[]) {
-    // 只需要特定列
-    // const result= await this.questionRepository.find ({
-    //   select: ['_id', 'title', 'isPublished', 'isStar', 'answerCount', 'createdAt', 'isDeleted'],
-    // });
-    // return {
-    //   errno: Errno.SUCCESS,
-    //   data: {
-    //     list: result,
-    //     total: result.length,
-    //   },
-    // };
+  async findAll(searchOptions: SearchOptions) {
+    const { keyword, isStar, isDeleted, page = 1, pageSize = 10 } = searchOptions;
 
     const queryBuilder = this.questionRepository.createQueryBuilder('question');
     queryBuilder.select([
@@ -95,32 +86,27 @@ export class QuestionService {
       'question.isDeleted',
       `COUNT (*) OVER() as total`, // 添加 total 字段，用于返回数据总数
     ]);
-    searchOptions.forEach((searchOption) => {
-      // page, 默认为 1
-      const page = searchOption.page || 1;
-      // pageSize, 默认为 10
-      const pageSize = searchOption.pageSize || 10;
-      // 计算起始索引
-      const startIndex = (page - 1) * pageSize;
-      // 设置 take 和 skip
-      queryBuilder.take(pageSize).skip(startIndex);
-      // isDeleted, 没有传值时，默认为 false
-      // arg.isDeleted 是 string 类型
-      const isDeleted = searchOption.isDeleted === 'true' || false;
-      queryBuilder.andWhere('question.isDeleted= :isDeleted', { isDeleted });
-      // keyword
-      if (searchOption.keyword) {
-        queryBuilder.andWhere('question.title like :keyword', { keyword: `%${searchOption.keyword}%` });
-      }
 
-      // isStar
-      if (searchOption.isStar !== undefined) {
-        // arg.isStar 是 string 类型
-        const isStar = searchOption.isStar === 'true';
-        queryBuilder.andWhere('question.isStar= :isStar', { isStar });
-      }
-      // 根据需要添加其他查询条件
-    });
+    // 设置 take 和 skip
+    const startIndex = (page - 1) * pageSize;
+    queryBuilder.take(pageSize).skip(startIndex);
+
+    // isDeleted, 没有传值时，默认为 false
+    const isDeletedValue = isDeleted === 'true' || false;
+    queryBuilder.andWhere('question.isDeleted = :isDeleted', { isDeleted: isDeletedValue });
+
+    // keyword
+    if (keyword) {
+      queryBuilder.andWhere('question.title like :keyword', { keyword: `%${keyword}%` });
+    }
+
+    // isStar
+    if (isStar !== undefined) {
+      const isStarValue = isStar === 'true' || false;
+      queryBuilder.andWhere('question.isStar = :isStar', { isStar: isStarValue });
+    }
+
+    // 根据需要添加其他查询条件
     const result = await queryBuilder.getRawAndEntities();
 
     const list = result.entities.map((entity) => {
@@ -227,33 +213,47 @@ export class QuestionService {
   // 保存问卷
   async saveQuestion(id: number, updateQuestionDto: UpdateQuestionDto) {
     const question = await this.findOne(+id);
-    const {
-      title,
-      description = '',
-      css = '',
-      js = '',
-      componentList,
-      isStar = 'false',
-      isPublished = 'false',
-      isDeleted = 'false',
-    } = updateQuestionDto;
+
+    const { title, description, css, js, componentList, isStar, isPublished, isDeleted } = updateQuestionDto;
+
+    // 如果数据库中没有该 id 时，则创建数据
+    if (!question) {
+      return this.createQuestion(title, description, css, js, componentList);
+    }
+
+    // 只有传了值才更新
+    if (title !== undefined) {
+      question.title = title;
+    }
+    if (description !== undefined) {
+      question.description = description;
+    }
+    if (css !== undefined) {
+      question.css = css;
+    }
+    if (js !== undefined) {
+      question.js = js;
+    }
+    if (isStar !== undefined) {
+      question.isStar = isStar;
+    }
+    if (isPublished !== undefined) {
+      question.isPublished = isPublished;
+    }
+    if (isDeleted !== undefined) {
+      question.isDeleted = isDeleted;
+    }
 
     // 如果 componentList 为 undefined，则将其置为 undefined
     const componentListObj = componentList === undefined ? undefined : [...componentList];
 
-    // 如果数据库中没有该 id 时，则创建数据
-    if (!question) {
-      return this.createQuestion(id, title, description, css, js, componentList);
-    }
-    // 如果数据库中有该 id 时，则更新数据
-    Object.assign(question, { title, description, css, js, isStar, isPublished, isDeleted });
     return this.updateQuestion(question, componentListObj);
   }
 
   // 创建问卷
-  async createQuestion(id: number, title: string, description: string, css: string, js: string, componentList: any[]) {
+  async createQuestion(title: string, description: string, css: string, js: string, componentList: any[]) {
     const questionTmp = new Question();
-    Object.assign(questionTmp, { _id: id, title, description, css, js });
+    Object.assign(questionTmp, { title, description, css, js });
 
     // componentList 转换成对象
     const questionComponentList = await this.createComponentList(componentList);
@@ -488,13 +488,13 @@ export class QuestionService {
       }
     }
 
-    const result = await this.questionRepository.save(question);
+    const result: Question = await this.questionRepository.save(question);
     return this.generateReturnData(result);
   }
 
   // 生成返回数据
-  generateReturnData(result) {
-    let returnData;
+  generateReturnData(result: any) {
+    let returnData: ReturnData;
     if (result['_id']) {
       returnData = {
         errno: Errno.SUCCESS,
@@ -559,13 +559,8 @@ export class QuestionService {
 
     for (const id of ids) {
       const question = await this.findOne(+id);
-      console.log('🚀 ~ file: question.service.ts:503 ~ QuestionService ~ removeByIds ~ question:', question);
       if (question) {
         const dbComponentList = this.getComponentList(question);
-        console.log(
-          '🚀 ~ file: question.service.ts:498 ~ QuestionService ~ removeByIds ~ dbComponentList:',
-          dbComponentList,
-        );
         const removeComponentResult = await this.removeWithComponents(dbComponentList);
         if (!removeComponentResult) {
           removeFailedIds.push({
@@ -597,19 +592,25 @@ export class QuestionService {
       [fe_id: string]: number;
     }[],
   ) {
-    // 删除旧组件
-    const promises = deleteComponentIds.map(async (deleteId: { [fe_id: string]: number }) => {
-      const [id, type] = Object.entries(deleteId)[0];
-      const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
-      const componentToRemove = await componentRepository.findOne({
-        where: {
-          fe_id: id,
-        },
+    try {
+      // 删除旧组件
+      const promises = deleteComponentIds.map(async (deleteId: { [fe_id: string]: number }) => {
+        const [id, type] = Object.entries(deleteId)[0];
+        const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
+        const componentToRemove = await componentRepository.findOne({
+          where: {
+            fe_id: id,
+          },
+        });
+        if (componentToRemove) {
+          await componentRepository.remove(componentToRemove);
+        }
       });
-      if (componentToRemove) {
-        await componentRepository.remove(componentToRemove);
-      }
-    });
-    return Promise.all(promises);
+      await Promise.all(promises);
+      return true;
+    } catch (error) {
+      console.log('删除组件失败', error);
+      return false;
+    }
   }
 }
