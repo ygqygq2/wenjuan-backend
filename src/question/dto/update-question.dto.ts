@@ -1,5 +1,7 @@
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
+import { Component } from '../types';
+
 export class UpdateQuestionDto {
   @IsString()
   @IsOptional()
@@ -19,7 +21,7 @@ export class UpdateQuestionDto {
 
   // 组件列表
   @IsOptional()
-  componentList?: any[];
+  componentList?: Component[];
 
   @IsBoolean()
   @IsOptional()

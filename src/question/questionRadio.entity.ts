@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, JoinColumn, OneToMany } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 
 import { ComponentTypeNumber } from '@/enum/componentType.enum';
 
@@ -25,11 +25,10 @@ export class QuestionRadio extends Component {
   props_title: string;
 
   // 单选框
-  @OneToMany(() => QuestionRadioOption, (questionRadioOption) => questionRadioOption.fe_id, {
+  @OneToMany(() => QuestionRadioOption, (questionRadioOption) => questionRadioOption.component, {
     eager: true,
     cascade: true,
     onDelete: 'CASCADE',
   })
-  @JoinColumn()
   options: QuestionRadioOption[];
 }

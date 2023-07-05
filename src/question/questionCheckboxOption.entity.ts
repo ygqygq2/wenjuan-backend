@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { QuestionCheckbox } from './questionCheckbox.entity';
 
@@ -25,8 +25,8 @@ export class QuestionCheckboxOption {
   checked: boolean;
 
   // 属于哪个多选框，和 QuestionCheckbox 的 fe_id 关联
-  @Expose()
   @ManyToOne(() => QuestionCheckbox, (questionCheckbox) => questionCheckbox.options)
-  @Column()
-  fe_id: string;
+  @Expose()
+  @JoinColumn({ name: 'component_fe_id' })
+  component: QuestionCheckbox;
 }

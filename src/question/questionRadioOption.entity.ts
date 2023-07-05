@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { QuestionRadio } from './questionRadio.entity';
 
@@ -22,6 +22,6 @@ export class QuestionRadioOption {
   // 属于哪个单选框，和 QuestionRadio 的 fe_id 关联
   @ManyToOne(() => QuestionRadio, (questionRadio) => questionRadio.options)
   @Expose()
-  @Column()
-  fe_id: string;
+  @JoinColumn({ name: 'component_fe_id' })
+  component: QuestionRadio;
 }

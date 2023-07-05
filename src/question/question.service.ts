@@ -20,6 +20,7 @@ import { QuestionRadio } from './questionRadio.entity';
 import { QuestionRadioOption } from './questionRadioOption.entity';
 import { QuestionTextarea } from './questionTextarea.entity';
 import { QuestionTitle } from './questionTitle.entity';
+import { Component, QuestionComponentClass } from './types';
 
 // 因为是前端传值过来的，都是字符串类型
 type SearchOptions = {
@@ -149,7 +150,7 @@ export class QuestionService {
    * 获取组件列表
    * @param question - 问卷实体
    */
-  getComponentList(question: Question): { [fe_id: string]: number }[] {
+  getComponentList(question: Question): { [fe_id: string]: ComponentTypeNumber }[] {
     const dbComponentList = JSON.parse(`[${question.componentList.join(',')}]`).flat() || [];
     return dbComponentList;
   }
@@ -161,7 +162,7 @@ export class QuestionService {
     }
     const dbComponentList = this.getComponentList(question);
     const componentList = await Promise.all(
-      dbComponentList.map(async (item: { [fe_id: string]: number }) => {
+      dbComponentList.map(async (item: { [fe_id: string]: ComponentTypeNumber }) => {
         // eslint-disable-next-line @typescript-eslint/no-shadow
         const [id, type] = Object.entries(item)[0];
         const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
@@ -184,7 +185,7 @@ export class QuestionService {
       }),
     );
     const flatComponentList = componentList.flat(); // 平铺嵌套数组
-    const questionData = { ...question };
+    const questionData: any = { ...question };
     questionData.componentList = flatComponentList || [];
     return questionData;
   }
@@ -251,7 +252,7 @@ export class QuestionService {
   }
 
   // 创建问卷
-  async createQuestion(title: string, description: string, css: string, js: string, componentList: any[]) {
+  async createQuestion(title: string, description: string, css: string, js: string, componentList: Component[]) {
     const questionTmp = new Question();
     Object.assign(questionTmp, { title, description, css, js });
 
@@ -265,10 +266,10 @@ export class QuestionService {
   }
 
   // 创建问卷组件
-  async createComponentList(componentList: any[]) {
+  async createComponentList(componentList: Component[]) {
     return Promise.all(
       componentList.map(async (component) => {
-        const ComponentClass = this.componentTypeToClass[component.type];
+        const ComponentClass: QuestionComponentClass = this.componentTypeToClass[component.type];
         const componentTmp = new ComponentClass();
         const { props } = component;
         // props 转换成对象，用于保存到数据库，要加 props_
@@ -284,12 +285,21 @@ export class QuestionService {
           disabled: component.disabled || false,
         });
 
-        if (component.type === 'questionCheckbox' || component.type === 'questionRadio') {
-          const optionsTmp = await this.createOptions(component);
-          componentTmp.options = optionsTmp;
-        }
-        const componentRepository = this[`${component.type}Repository`];
+        const componentRepository = this[`${component.type}Repository`] as Repository<
+          QuestionCheckbox &
+            QuestionInfo &
+            QuestionInput &
+            QuestionParagraph &
+            QuestionRadio &
+            QuestionTextarea &
+            QuestionTitle
+        >;
         const compResult = await componentRepository.save(componentTmp);
+
+        if (componentTmp instanceof QuestionCheckbox || componentTmp instanceof QuestionRadio) {
+          await this.createOptions(componentTmp, component);
+        }
+
         return compResult.fe_id;
       }),
     );
@@ -302,23 +312,27 @@ export class QuestionService {
    * @param componentList - 前端传过来的组件列表
    * @returns
    */
-  async updateComponentList(question: Question, oldComponentList: any[], componentList: any[]) {
+  async updateComponentList(
+    question: Question,
+    oldComponentList: { [fe_id: string]: ComponentTypeNumber }[],
+    componentList: any[],
+  ) {
     // 创建一个新的组件 ID 列表
-    const newComponentIds: Array<{ [fe_id: string]: number }> = componentList.map((component) => ({
+    const newComponentIds: Array<{ [fe_id: string]: ComponentTypeNumber }> = componentList.map((component) => ({
       [`${component.fe_id}`]: ComponentTypeToNumber[component.type],
     }));
 
     // 已经存在的 ID 列表，newComponentIds 存在于 oldComponentList 中的元素
-    const existComponentIds: Array<{ [fe_id: string]: number }> = newComponentIds.filter((item) => {
+    const existComponentIds: Array<{ [fe_id: string]: ComponentTypeNumber }> = newComponentIds.filter((item) => {
       return Object.keys(item).some((key: string) => {
-        return oldComponentList.some((oldItem: { [fe_id: string]: number }) => oldItem[key] === item[key]);
+        return oldComponentList.some((oldItem: { [fe_id: string]: ComponentTypeNumber }) => oldItem[key] === item[key]);
       });
     });
 
     // 要删除的旧组件
-    const deleteComponentIds: Array<{ [fe_id: string]: number }> = newComponentIds.filter((item) => {
+    const deleteComponentIds: Array<{ [fe_id: string]: ComponentTypeNumber }> = newComponentIds.filter((item) => {
       return !Object.keys(item).some((key: string) => {
-        return oldComponentList.some((oldItem: { [fe_id: string]: number }) => oldItem[key] === item[key]);
+        return oldComponentList.some((oldItem: { [fe_id: string]: ComponentTypeNumber }) => oldItem[key] === item[key]);
       });
     });
 
@@ -336,22 +350,8 @@ export class QuestionService {
       | QuestionTitle
     > = await componentList.reduce(async (accPromise, component) => {
       const acc = await accPromise;
-      const ComponentClass:
-        | typeof QuestionCheckbox
-        | typeof QuestionInfo
-        | typeof QuestionInput
-        | typeof QuestionParagraph
-        | typeof QuestionRadio
-        | typeof QuestionTextarea
-        | typeof QuestionTitle = this.componentTypeToClass[component.type];
-      const componentTmp = new (ComponentClass as new () =>
-        | QuestionCheckbox
-        | QuestionInfo
-        | QuestionInput
-        | QuestionParagraph
-        | QuestionRadio
-        | QuestionTextarea
-        | QuestionTitle)();
+      const ComponentClass: QuestionComponentClass = this.componentTypeToClass[component.type];
+      const componentTmp = new ComponentClass();
       // 提取出前端传过来的组件 props 对象
       // 将 {props: {aa: bb}} 转换成 {props_aa: bb}
       const { props } = component;
@@ -368,17 +368,6 @@ export class QuestionService {
         question,
       });
 
-      // 有 options 的特殊组件
-      if (componentTmp instanceof QuestionCheckbox || componentTmp instanceof QuestionRadio) {
-        if (existComponentIds.includes(component.fe_id)) {
-          const optionsTmp = await this.updateOptions(component);
-          componentTmp.options = optionsTmp;
-        } else {
-          const optionsTmp = await this.createOptions(component);
-          componentTmp.options = optionsTmp;
-        }
-      }
-
       // 组件 repository
       const componentRepository = this[`${ComponentNumberToType[componentTmp.type]}Repository`] as Repository<
         QuestionCheckbox &
@@ -391,6 +380,16 @@ export class QuestionService {
       >;
       // 保存组件到数据库
       await componentRepository.save(componentTmp);
+
+      // 有 options 的特殊组件
+      if (componentTmp instanceof QuestionCheckbox || componentTmp instanceof QuestionRadio) {
+        if (existComponentIds.includes(component.fe_id)) {
+          await this.updateOptions(componentTmp, component);
+        } else {
+          await this.createOptions(componentTmp, component);
+        }
+      }
+
       acc.push(componentTmp);
       return acc;
     }, []);
@@ -405,62 +404,84 @@ export class QuestionService {
     return updatedComponentList;
   }
 
-  // 组件选项，只有 questionCheckbox/questionRadio 时才需要
-  async createOptions(component) {
+  /**
+   * 组件选项，只有 questionCheckbox/questionRadio 时才需要
+   * @param component - 前端传过来的组件
+   */
+  async createOptions<T extends QuestionCheckboxOption | QuestionRadioOption>(
+    componentTmp: QuestionCheckbox | QuestionRadio,
+    component,
+  ) {
+    // 判断选项数据是否已经存在，存在则更新，不存在则删除
+    // 获取旧的选项数据
     return Promise.all(
       component.props.propsOptions.map(async (option) => {
-        let optResult: QuestionCheckboxOption | QuestionRadioOption;
-        let optionTmp;
+        let optionTmp: T;
         if (component.type === 'questionCheckbox') {
-          optionTmp = new QuestionCheckboxOption();
-          Object.assign(optionTmp, {
-            value: option.value || '',
-            text: option.text || '',
-            checked: option.checked || false, // 直接在这里设置 checked 属性
-          });
-          optResult = await this.questionCheckboxOptionRepository.save(optionTmp);
+          optionTmp = {
+            ...option,
+            checked: option.checked || false,
+            component: componentTmp,
+          } as T;
         } else if (component.type === 'questionRadio') {
-          optionTmp = new QuestionRadioOption();
-          Object.assign(optionTmp, {
-            value: option.value || '',
-            text: option.text || '',
-          });
-          optResult = await this.questionRadioOptionRepository.save(optionTmp);
+          optionTmp = {
+            ...option,
+            component: componentTmp,
+          } as T;
         }
 
+        const optResult = await this.saveOption(optionTmp);
         return optResult._id;
       }),
     );
   }
 
   // 更新选项数据
-  async updateOptions(component) {
+  async updateOptions<T extends QuestionCheckboxOption | QuestionRadioOption>(
+    componentTmp: QuestionCheckbox | QuestionRadio,
+    component,
+  ) {
     // 判断选项数据是否已经存在，存在则更新，不存在则删除
     // 获取旧的选项数据
     return Promise.all(
       component.props.propsOptions.map(async (option) => {
-        let optResult: QuestionCheckboxOption | QuestionRadioOption;
-        let optionTmp;
+        let optionTmp: T;
         if (component.type === 'questionCheckbox') {
-          optionTmp = new QuestionCheckboxOption();
-          Object.assign(optionTmp, {
-            value: option.value || '',
-            text: option.text || '',
-            checked: option.checked || false, // 直接在这里设置 checked 属性
-          });
-          optResult = await this.questionCheckboxOptionRepository.save(optionTmp);
+          optionTmp = {
+            ...option,
+            checked: option.checked || false,
+            component: componentTmp,
+          } as T;
         } else if (component.type === 'questionRadio') {
-          optionTmp = new QuestionRadioOption();
-          Object.assign(optionTmp, {
-            value: option.value || '',
-            text: option.text || '',
-          });
-          optResult = await this.questionRadioOptionRepository.save(optionTmp);
+          optionTmp = {
+            ...option,
+            component: componentTmp,
+          } as T;
         }
 
+        const optResult = await this.saveOption(optionTmp);
         return optResult._id;
       }),
     );
+  }
+
+  /**
+   * 保存选项
+   * @param option - 选项实体
+   */
+  async saveOption<T extends QuestionCheckboxOption | QuestionRadioOption>(option: T) {
+    try {
+      if (option instanceof QuestionCheckboxOption) {
+        return await this.questionCheckboxOptionRepository.save(option);
+      }
+      if (option instanceof QuestionRadioOption) {
+        return await this.questionRadioOptionRepository.save(option);
+      }
+      throw new Error('未知选项类型');
+    } catch (error) {
+      console.error('保存选项出错', error);
+      throw new Error('保存选项出错');
+    }
   }
 
   // 将前端 componentList 转换成数据库中的组件列表
@@ -478,13 +499,27 @@ export class QuestionService {
    */
   async updateQuestion(question: Question, componentList?: any) {
     if (componentList !== undefined) {
-      const oldComponentList = question.componentList || [];
+      const oldComponentList: { [fe_id: string]: ComponentTypeNumber }[] = question.componentList.reduce(
+        (acc, fe_id) => {
+          acc.push({ fe_id, number: 1 });
+          return acc;
+        },
+        [],
+      );
       const frontendComponentList = await this.convertComponentList(componentList);
-      const frontendComponentListStr = frontendComponentList.map((component) => JSON.stringify(component));
+      const frontendComponentListStr = frontendComponentList.map(
+        (component: { [fe_id: string]: ComponentTypeNumber }) => JSON.stringify(component),
+      );
 
       if (!isEqual(oldComponentList.sort(), frontendComponentListStr.sort())) {
-        const questionComponentList = await this.updateComponentList(question, oldComponentList, componentList);
-        question.componentList = questionComponentList.map((component) => JSON.stringify(component));
+        const questionComponentList: { [fe_id: string]: ComponentTypeNumber }[] = await this.updateComponentList(
+          question,
+          oldComponentList,
+          componentList,
+        );
+        question.componentList = questionComponentList.map((component: { [fe_id: string]: ComponentTypeNumber }) =>
+          JSON.stringify(component),
+        );
       }
     }
 
@@ -589,14 +624,22 @@ export class QuestionService {
    */
   async removeWithComponents(
     deleteComponentIds: {
-      [fe_id: string]: number;
+      [fe_id: string]: ComponentTypeNumber;
     }[],
   ) {
     try {
       // 删除旧组件
-      const promises = deleteComponentIds.map(async (deleteId: { [fe_id: string]: number }) => {
+      const promises = deleteComponentIds.map(async (deleteId: { [fe_id: string]: ComponentTypeNumber }) => {
         const [id, type] = Object.entries(deleteId)[0];
-        const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
+        const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<
+          QuestionCheckbox &
+            QuestionInfo &
+            QuestionInput &
+            QuestionParagraph &
+            QuestionRadio &
+            QuestionTextarea &
+            QuestionTitle
+        >;
         const componentToRemove = await componentRepository.findOne({
           where: {
             fe_id: id,

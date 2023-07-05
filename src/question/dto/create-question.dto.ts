@@ -1,5 +1,7 @@
 import { IsString, IsNotEmpty } from 'class-validator';
 
+import { Component } from '../types';
+
 export class CreateQuestionDto {
   @IsString()
   @IsNotEmpty()
@@ -15,5 +17,5 @@ export class CreateQuestionDto {
   js?: string;
 
   // 组件列表
-  componentList?: string;
+  componentList?: Component[];
 }

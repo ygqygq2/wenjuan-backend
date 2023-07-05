@@ -21,7 +21,7 @@ export class QuestionCheckbox extends Component {
   props_isVertical: boolean;
 
   // 多选框列表
-  @OneToMany(() => QuestionCheckboxOption, (questionCheckboxOption) => questionCheckboxOption.fe_id, {
+  @OneToMany(() => QuestionCheckboxOption, (questionCheckboxOption) => questionCheckboxOption.component, {
     eager: true,
     cascade: true,
     onDelete: 'CASCADE',
