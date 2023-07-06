@@ -6,6 +6,7 @@ import Redis from 'ioredis';
 import isEqual from 'lodash/isEqual';
 import { Repository } from 'typeorm';
 
+import { componentOptionType } from '@/config/component';
 import { ComponentNumberToType, ComponentTypeNumber, ComponentTypeToNumber } from '@/enum/componentType.enum';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
@@ -410,30 +411,33 @@ export class QuestionService {
    */
   async createOptions<T extends QuestionCheckboxOption | QuestionRadioOption>(
     componentTmp: QuestionCheckbox | QuestionRadio,
-    component,
+    component: Component,
   ) {
-    // 判断选项数据是否已经存在，存在则更新，不存在则删除
-    // 获取旧的选项数据
-    return Promise.all(
-      component.props.propsOptions.map(async (option) => {
-        let optionTmp: T;
-        if (component.type === 'questionCheckbox') {
-          optionTmp = {
-            ...option,
-            checked: option.checked || false,
-            component: componentTmp,
-          } as T;
-        } else if (component.type === 'questionRadio') {
-          optionTmp = {
-            ...option,
-            component: componentTmp,
-          } as T;
-        }
+    const optionMap: Record<string, { optionTmp: T; checked?: boolean }> = {
+      questionCheckbox: {
+        optionTmp: new QuestionCheckboxOption() as T,
+        checked: true,
+      },
+      questionRadio: {
+        optionTmp: new QuestionRadioOption() as T,
+      },
+      // 添加其他类型的映射
+    };
 
-        const optResult = await this.saveOption(optionTmp);
-        return optResult._id;
-      }),
-    );
+    const optionPromises = component.props.options.map(async (option: any) => {
+      const optionType = optionMap[component.type];
+      const { optionTmp } = optionType;
+      Object.assign(optionTmp, {
+        ...option,
+        ...(optionType.checked && { checked: option.checked || false }),
+        component: componentTmp,
+      });
+      const optResult = await this.saveOption(optionTmp);
+      return optResult._id;
+    });
+
+    const optionIds = await Promise.all(optionPromises);
+    return optionIds;
   }
 
   // 更新选项数据
@@ -646,10 +650,38 @@ export class QuestionService {
           },
         });
         if (componentToRemove) {
+          const hasOptions = componentOptionType.includes(componentToRemove.type);
+          if (hasOptions) {
+            await this.removeOptions(componentToRemove);
+          }
           await componentRepository.remove(componentToRemove);
         }
       });
       await Promise.all(promises);
+      return true;
+    } catch (error) {
+      console.log('删除组件失败', error);
+      return false;
+    }
+  }
+
+  /**
+   * 删除组件
+   * @param deleteComponent - 要删除的组件实体
+   */
+  async removeOptions(deleteComponent: QuestionCheckbox | QuestionRadio) {
+    try {
+      // 删除旧组件
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const { fe_id, type } = deleteComponent;
+      const optionRepository = this[`${ComponentNumberToType[type]}OptionRepository`] as Repository<
+        QuestionCheckboxOption | QuestionRadioOption
+      >;
+      const queryBuilder = optionRepository.createQueryBuilder('option');
+      const optionToRemove = await queryBuilder.where('option.component_fe_id = :fe_id', { fe_id }).getMany();
+      if (optionToRemove.length > 0) {
+        await optionRepository.remove(optionToRemove);
+      }
       return true;
     } catch (error) {
       console.log('删除组件失败', error);
