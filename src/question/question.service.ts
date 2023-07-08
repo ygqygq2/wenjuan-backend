@@ -157,8 +157,22 @@ export class QuestionService {
       dbComponentList.map(async (item: ComponentDB) => {
         // eslint-disable-next-line @typescript-eslint/no-shadow
         const [id, type] = Object.entries(item)[0];
-        const componentRepository = this[`${ComponentNumberToType[type]}Repository`];
-        const compResult = await componentRepository.findOne({
+        const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<
+          QuestionCheckbox &
+            QuestionInfo &
+            QuestionInput &
+            QuestionParagraph &
+            QuestionRadio &
+            QuestionTextarea &
+            QuestionTitle
+        >;
+        const compResult: QuestionCheckbox &
+          QuestionInfo &
+          QuestionInput &
+          QuestionParagraph &
+          QuestionRadio &
+          QuestionTextarea &
+          QuestionTitle = await componentRepository.findOne({
           where: {
             fe_id: id,
           },
@@ -176,9 +190,20 @@ export class QuestionService {
         return rest;
       }),
     );
-    const flatComponentList = componentList.flat(); // 平铺嵌套数组
+
+    const modifiedComponentList = componentList.map((item) => {
+      const { props, options = [], ...rest } = item;
+
+      return {
+        ...rest,
+        props: {
+          ...props,
+          options: options || [],
+        },
+      };
+    });
     const questionData: any = { ...question };
-    questionData.componentList = flatComponentList || [];
+    questionData.componentList = modifiedComponentList || [];
     return questionData;
   }
 
