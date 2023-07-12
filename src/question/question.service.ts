@@ -397,9 +397,11 @@ export class QuestionService {
       // 有 options 的特殊组件
       if (componentTmp instanceof QuestionCheckbox || componentTmp instanceof QuestionRadio) {
         if (existComponentIds.some((item) => Object.prototype.hasOwnProperty.call(item, component.fe_id))) {
+          console.log('update options');
           const options = await this.updateOptions(componentTmp, component);
           componentTmp.options = options;
         } else {
+          console.log('create options');
           const options = await this.createOptions(componentTmp, component);
           componentTmp.options = options;
         }
@@ -425,20 +427,21 @@ export class QuestionService {
     componentTmp: QuestionCheckbox | QuestionRadio,
     component: Component,
   ) {
-    const optionMap: Record<string, { optionTmp: T; checked?: boolean }> = {
+    const optionMap: Record<string, { optionFactory: () => T; checked?: boolean }> = {
       questionCheckbox: {
-        optionTmp: new QuestionCheckboxOption() as T,
+        optionFactory: () => new QuestionCheckboxOption() as T,
         checked: true,
       },
       questionRadio: {
-        optionTmp: new QuestionRadioOption() as T,
+        optionFactory: () => new QuestionRadioOption() as T,
       },
       // 添加其他类型的映射
     };
 
     const optionPromises = component.props.options.map(async (option: any) => {
       const optionType = optionMap[component.type];
-      const { optionTmp } = optionType;
+      // 在每次循环中都通过工厂函数创建一个新的对象
+      const optionTmp = optionType.optionFactory();
       Object.assign(optionTmp, {
         ...option,
         ...(optionType.checked && { checked: option.checked || false }),
@@ -459,16 +462,16 @@ export class QuestionService {
   ) {
     // 判断选项数据是否已经存在，存在则更新，不存在则删除
     // 获取旧的选项数据
-    const oldOptions = await this.getOptions(componentTmp);
+    const oldOptions: (QuestionCheckboxOption | QuestionRadioOption)[] = await this.getOptions(componentTmp);
 
     // 获取新的选项数据
-    const optionMap: Record<string, { optionTmp: T; checked?: boolean }> = {
+    const optionMap: Record<string, { optionFactory: () => T; checked?: boolean }> = {
       questionCheckbox: {
-        optionTmp: new QuestionCheckboxOption() as T,
+        optionFactory: () => new QuestionCheckboxOption() as T,
         checked: true,
       },
       questionRadio: {
-        optionTmp: new QuestionRadioOption() as T,
+        optionFactory: () => new QuestionRadioOption() as T,
       },
       // 添加其他类型的映射
     };
@@ -477,7 +480,8 @@ export class QuestionService {
     // typeorm 中 new 实体，然后把主键合并到实体中，则会变成更新
     const optionPromises = component.props.options.map(async (option: any) => {
       const optionType = optionMap[component.type];
-      const { optionTmp } = optionType;
+      // 在每次循环中都通过工厂函数创建一个新的对象
+      const optionTmp = optionType.optionFactory();
       Object.assign(optionTmp, {
         ...option,
         ...(optionType.checked && { checked: option.checked || false }),
@@ -496,11 +500,15 @@ export class QuestionService {
 
     await Promise.all(
       deleteOptionIds.map(async (deleteOptionId) => {
-        if (componentTmp instanceof QuestionCheckbox) {
-          await this.questionCheckboxOptionRepository.delete(deleteOptionId);
-        }
-        if (componentTmp instanceof QuestionRadio) {
-          await this.questionRadioOptionRepository.delete(deleteOptionId);
+        switch (componentTmp.constructor) {
+          case QuestionCheckbox:
+            await this.questionCheckboxOptionRepository.delete(deleteOptionId);
+            break;
+          case QuestionRadio:
+            await this.questionRadioOptionRepository.delete(deleteOptionId);
+            break;
+          default:
+            break;
         }
       }),
     );
@@ -513,7 +521,9 @@ export class QuestionService {
    * @param componentTmp - 组件实体
    * @returns
    */
-  async getOptions(componentTmp): Promise<Array<QuestionCheckboxOption | QuestionRadioOption>> {
+  async getOptions(
+    componentTmp: QuestionCheckbox | QuestionRadio,
+  ): Promise<Array<QuestionCheckboxOption | QuestionRadioOption>> {
     if (componentTmp instanceof QuestionCheckbox) {
       return this.questionCheckboxOptionRepository.find({
         where: {
