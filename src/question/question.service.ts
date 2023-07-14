@@ -438,7 +438,10 @@ export class QuestionService {
       // 添加其他类型的映射
     };
 
-    const optionPromises = component.props.options.map(async (option: any) => {
+    const optionIds = [];
+    // 为了保持原来的选项顺序，使用 for 循环
+    for (let i = 0; i < component.props.options.length; i++) {
+      const option = component.props.options[i];
       const optionType = optionMap[component.type];
       // 在每次循环中都通过工厂函数创建一个新的对象
       const optionTmp = optionType.optionFactory();
@@ -448,10 +451,9 @@ export class QuestionService {
         component: componentTmp,
       });
       const optResult = await this.saveOption(optionTmp);
-      return optResult._id;
-    });
+      optionIds.push(optResult._id);
+    }
 
-    const optionIds = await Promise.all(optionPromises);
     return optionIds;
   }
 
