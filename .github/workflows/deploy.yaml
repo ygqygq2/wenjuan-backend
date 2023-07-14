@@ -81,3 +81,5 @@ jobs:
           docker-compose -f docker-compose.yml up -d
         env:
           IMAGE: ghcr.io/${{ github.repository }}/main:${{ github.ref_name }}-${{ github.run_id }}
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}

@@ -10,6 +10,9 @@ services:
     # build:
     #   context: .
     #   dockerfile: Dockerfile
+    environment:
+      - REGISTRY_USERNAME=${REGISTRY_USERNAME}
+      - REGISTRY_PASSWORD=${REGISTRY_PASSWORD}
     image: ${IMAGE}
     ports:
       - '3000:3000'
