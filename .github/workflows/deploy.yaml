@@ -42,7 +42,7 @@ jobs:
       #       ghcr.io/${{ github.repository }}/main
 
       - name: Docker pull latest images
-        run: docker pull ghcr.io/${{ github.repository }}/main:latest
+        run: docker pull ghcr.io/${{ github.repository }}/main:latest || true
 
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
