@@ -39,7 +39,7 @@ jobs:
       #     images: |
       #       ghcr.io/${{ github.repository }}/main
 
-      - name: Build and push Docker images 2
+      - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
           context: ./
@@ -48,7 +48,7 @@ jobs:
           # tags: ${{ steps.meta.outputs.tags }}
           # labels: ${{ steps.meta.outputs.labels }}
           # platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/${{ github.repository }}/main:${{ github.ref }}-${{ github.sha }}
+          tags: ghcr.io/${{ github.repository }}/main:${{ github.ref_name }}-${{ github.run_id }}
 
   deploy:
     runs-on: self-host
@@ -57,4 +57,4 @@ jobs:
         run: |
           docker-compose -f docker-compose.yml up -d
         env:
-          TAG: ${{ github.ref }}-${{ github.sha }}
+          TAG: ${{ github.ref_name }}-${{ github.run_id }}
