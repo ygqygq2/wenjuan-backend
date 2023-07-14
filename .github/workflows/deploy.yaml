@@ -57,6 +57,11 @@ jobs:
     needs: build
     if: ${{ needs.build.result == 'success' }}
     steps:
+      - name: Checkout yaml file
+        uses: actions/checkout@v3
+        with:
+          path: docker-compose.yml
+
       - name: Deploy using Docker Compose
         run: |
           docker-compose -f docker-compose.yml up -d
