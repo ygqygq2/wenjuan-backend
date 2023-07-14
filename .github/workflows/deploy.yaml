@@ -54,6 +54,8 @@ jobs:
 
   deploy:
     runs-on: self-host
+    needs: build
+    if: ${{ needs.build.result == 'success' }}
     steps:
       - name: Deploy using Docker Compose
         run: |
