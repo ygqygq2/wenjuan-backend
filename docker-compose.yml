@@ -6,11 +6,11 @@ networks:
 
 services:
   app:
-  #   image: ygqygq2/nestjs-learning:latest
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-    image: docker.pkg.github.com/ygqygq2/wenjuan-backend/main:${TAG}
+    # image: ygqygq2/nestjs-learning:latest
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile
+    image: ${IMAGE}
     ports:
       - '3000:3000'
     networks:

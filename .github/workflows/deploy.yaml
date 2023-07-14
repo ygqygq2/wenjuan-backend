@@ -80,4 +80,4 @@ jobs:
         run: |
           docker-compose -f docker-compose.yml up -d
         env:
-          TAG: ${{ github.ref_name }}-${{ github.run_id }}
+          IMAGE: ghcr.io/${{ github.repository }}/main:${{ github.ref_name }}-${{ github.run_id }}
