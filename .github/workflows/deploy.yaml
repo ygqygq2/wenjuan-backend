@@ -50,11 +50,11 @@ jobs:
           # platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ github.repository }}/main:${{ github.ref }}-${{ github.sha }}
 
-    deploy:
-      runs-on: self-host
-      steps:
-        - name: Deploy using Docker Compose
-          run: |
-            docker-compose -f docker-compose.yml up -d
-          env:
-            TAG: ${{ github.ref }}-${{ github.sha }}
+  deploy:
+    runs-on: self-host
+    steps:
+      - name: Deploy using Docker Compose
+        run: |
+          docker-compose -f docker-compose.yml up -d
+        env:
+          TAG: ${{ github.ref }}-${{ github.sha }}
