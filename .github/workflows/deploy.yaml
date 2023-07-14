@@ -65,7 +65,9 @@ jobs:
       - name: Checkout yaml file
         uses: actions/checkout@v3
         with:
-          path: docker-compose.yml
+          sparse-checkout: |
+            docker-compose.yml
+          sparse-checkout-cone-mode: false
 
       - name: Deploy using Docker Compose
         run: |
