@@ -41,6 +41,9 @@ jobs:
       #     images: |
       #       ghcr.io/${{ github.repository }}/main
 
+      - name: Docker pull latest images
+        run: docker pull ghcr.io/${{ github.repository }}/main:latest
+
       - name: Build and push Docker images
         uses: docker/build-push-action@v4
         with:
@@ -50,7 +53,9 @@ jobs:
           # tags: ${{ steps.meta.outputs.tags }}
           # labels: ${{ steps.meta.outputs.labels }}
           # platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/${{ github.repository }}/main:${{ github.ref_name }}-${{ github.run_id }}
+          tags: |
+            ghcr.io/${{ github.repository }}/main:${{ github.ref_name }}-${{ github.run_id }},
+            ghcr.io/${{ github.repository }}/main:latest
 
   deploy:
     runs-on: self-hosted
