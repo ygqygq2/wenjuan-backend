@@ -53,7 +53,7 @@ jobs:
           tags: ghcr.io/${{ github.repository }}/main:${{ github.ref_name }}-${{ github.run_id }}
 
   deploy:
-    runs-on: self-host
+    runs-on: self-hosted
     needs: build
     if: ${{ needs.build.result == 'success' }}
     steps:
