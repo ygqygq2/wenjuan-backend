@@ -55,7 +55,7 @@ export class Question {
   @Expose()
   @Column({
     type: 'simple-array',
-    nullable: true,
+    default: '',
   })
   componentList: string[];
 }
