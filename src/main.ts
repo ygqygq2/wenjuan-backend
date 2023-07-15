@@ -5,14 +5,14 @@ import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
 import { AppModule } from './app.module';
 import { getServerConfig } from './utils/config.helper';
-// import{ AllExceptionFilter} from './filters/all-exception.filter';
+// import {AllExceptionFilter} from './filters/all-exception.filter';
 
 async function bootstrap() {
   const config = getServerConfig();
   // 切换 fastify
   // const app= await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {});
   // 默认 express
-  const app = await NestFactory.create(AppModule, {});
+  const app = await NestFactory.create(AppModule, { cors: true });
 
   // 指定 url 前缀
   app.setGlobalPrefix('api');
