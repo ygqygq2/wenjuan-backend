@@ -43,10 +43,10 @@ LABEL maintainer "ygqygq2@qq.com"
 ENV NODE_ENV production
 WORKDIR /app
 COPY --chown=node:node --from=builder /app/node_modules ./node_modules
-COPY --chown=node:node --from=builder /app/dist ./dist
+COPY --chown=node:node --from=builder /app/dist ./
 COPY --chown=node:node .env .env.production ./
 
 VOLUME [ "/app/logs" ]
 EXPOSE 3000
 
-CMD [ "node", "dist/src/main.js" ]
+CMD [ "node", "src/main.js" ]
