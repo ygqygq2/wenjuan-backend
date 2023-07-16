@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import Redis from 'ioredis';
 import isEqual from 'lodash/isEqual';
+import { nanoid } from 'nanoid';
 import { Repository } from 'typeorm';
 
 import { componentOptionType } from '@/config/component';
@@ -152,6 +153,16 @@ export class QuestionService {
     if (!question) {
       return null;
     }
+    const questionData = this.convertQuestionToFront(question);
+    return questionData;
+  }
+
+  /**
+   * 转换问卷数据到前端
+   * @param question
+   * @returns
+   */
+  async convertQuestionToFront(question: Question) {
     const dbComponentList = this.getComponentList(question);
     const componentList = await Promise.all(
       dbComponentList.map(async (item: ComponentDB) => {
@@ -481,6 +492,7 @@ export class QuestionService {
     // 前端传过来的 options，包含 _id
     // typeorm 中 new 实体，然后把主键合并到实体中，则会变成更新
     const optionPromises = component.props.options.map(async (option: any) => {
+      // const optionPromises: Promise<string>[] = component.props.options.map(async (option: any) => {
       const optionType = optionMap[component.type];
       // 在每次循环中都通过工厂函数创建一个新的对象
       const optionTmp = optionType.optionFactory();
@@ -633,16 +645,75 @@ export class QuestionService {
       };
       return returnData;
     }
-    const { title, description, css, js, componentList } = question;
+    const newId = await this.getNewestId();
 
-    const questionTmp = new Question();
-    questionTmp._id = await this.getNewestId();
-    questionTmp.title = title;
-    questionTmp.description = description;
-    questionTmp.css = css;
-    questionTmp.js = js;
-    questionTmp.componentList = componentList;
-    const result = await this.questionRepository.save(questionTmp);
+    const copiedQuestion: Question = { ...question };
+    copiedQuestion._id = newId;
+
+    const dbComponentList = this.getComponentList(question);
+    const copiedComponentList = await Promise.all(
+      dbComponentList.map(async (item: ComponentDB) => {
+        // eslint-disable-next-line @typescript-eslint/no-shadow
+        const [id, type] = Object.entries(item)[0];
+        const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<
+          QuestionCheckbox &
+            QuestionInfo &
+            QuestionInput &
+            QuestionParagraph &
+            QuestionRadio &
+            QuestionTextarea &
+            QuestionTitle
+        >;
+        const compResult: QuestionCheckbox &
+          QuestionInfo &
+          QuestionInput &
+          QuestionParagraph &
+          QuestionRadio &
+          QuestionTextarea &
+          QuestionTitle = await componentRepository.findOne({
+          where: {
+            fe_id: id,
+          },
+        });
+        // 复制组件
+        const copiedComponent = { ...compResult };
+        const newFeId = nanoid(); // 使用 nanoid() 生成新的 fe_id 值
+        copiedComponent.fe_id = newFeId;
+        const newOptions = await this.copyOptions(compResult);
+        copiedComponent.options = newOptions;
+
+        // 数据里面的 props_aa: bb 转成 {props: {aa: bb}}
+        // const props = {};
+        // Object.keys(compResult).forEach((key) => {
+        //   if (key.startsWith('props_')) {
+        //     const propKey = key.replace('props_', '');
+        //     props[propKey] = compResult[key];
+        //     delete compResult[key]; // 删除原来的 props_xxx 属性
+        //   }
+        // });
+        // const rest = {...compResult, props, type: `${ComponentNumberToType[type]}`};
+        // return rest;
+      }),
+    );
+
+    // const modifiedComponentList = componentList.map((item) => {
+    //   const {props, options = [], ...rest} = item;
+
+    //   return {
+    //     ...rest,
+    //     props: {
+    //       ...props,
+    //       options: options || [],
+    //     },
+    //   };
+    // });
+    // const questionData: any = {...question};
+    // questionData.componentList = modifiedComponentList || [];
+    // return questionData;
+
+    copiedQuestion.componentList = copiedComponentList;
+
+    const result = await this.questionRepository.save(copiedQuestion);
     if (result['_id']) {
       returnData = {
         errno: Errno.SUCCESS,
@@ -657,6 +728,26 @@ export class QuestionService {
       msg: ErrMsg[Errno.ERRNO_11],
     };
     return returnData;
+  }
+
+  // 更新选项数据
+  async copyOptions(
+    componentTmp: QuestionCheckbox | QuestionRadio,
+  ): Promise<(QuestionCheckboxOption | QuestionRadioOption)[]> {
+    // 判断选项数据是否已经存在，存在则复制
+    // 获取旧的选项数据
+    const oldOptions: (QuestionCheckboxOption | QuestionRadioOption)[] = await this.getOptions(componentTmp);
+
+    // 复制选项数据并保存到数据库中
+    const newOptions: (QuestionCheckboxOption | QuestionRadioOption)[] = [];
+    for (const oldOption of oldOptions) {
+      const newOption = { ...oldOption }; // 复制选项数据
+      delete newOption._id; // 清除旧的主键
+      const savedOption = await this.saveOption(newOption); // 保存新选项数据到数据库
+      newOptions.push(savedOption); // 获取新的主键并添加到列表中
+    }
+
+    return newOptions;
   }
 
   /**
