@@ -1,14 +1,19 @@
 import { RedisService } from '@liaoliaots/nestjs-redis';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import Redis from 'ioredis';
+import { cloneDeep } from 'lodash';
 import isEqual from 'lodash/isEqual';
 import { nanoid } from 'nanoid';
+
 import { Repository } from 'typeorm';
 
-import { componentOptionType } from '@/config/component';
-import { ComponentNumberToType, ComponentTypeNumber, ComponentTypeToNumber } from '@/enum/componentType.enum';
+import {
+  ComponentNumberToType,
+  ComponentTypeNumber,
+  ComponentTypeToNumber,
+  componentOptionType,
+} from '@/enum/componentType.enum';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -22,7 +27,15 @@ import { QuestionRadio } from './questionRadio.entity';
 import { QuestionRadioOption } from './questionRadioOption.entity';
 import { QuestionTextarea } from './questionTextarea.entity';
 import { QuestionTitle } from './questionTitle.entity';
-import { Component, ComponentDB, QuestionComponentClass, SearchOptions } from './types';
+import {
+  Component,
+  ComponentDB,
+  ComponentHaveOptionType,
+  ComponentOptionType,
+  ComponentType,
+  QuestionComponentClass,
+  SearchOptions,
+} from './types';
 
 @Injectable()
 export class QuestionService {
@@ -168,22 +181,8 @@ export class QuestionService {
       dbComponentList.map(async (item: ComponentDB) => {
         // eslint-disable-next-line @typescript-eslint/no-shadow
         const [id, type] = Object.entries(item)[0];
-        const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<
-          QuestionCheckbox &
-            QuestionInfo &
-            QuestionInput &
-            QuestionParagraph &
-            QuestionRadio &
-            QuestionTextarea &
-            QuestionTitle
-        >;
-        const compResult: QuestionCheckbox &
-          QuestionInfo &
-          QuestionInput &
-          QuestionParagraph &
-          QuestionRadio &
-          QuestionTextarea &
-          QuestionTitle = await componentRepository.findOne({
+        const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<ComponentType>;
+        const compResult: ComponentType = await componentRepository.findOne({
           where: {
             fe_id: id,
           },
@@ -203,16 +202,25 @@ export class QuestionService {
     );
 
     const modifiedComponentList = componentList.map((item) => {
-      const { props, options = [], ...rest } = item;
-
+      const { props, ...rest } = item;
+      if ('options' in props) {
+        // 需要格式化 options 的组件
+        return {
+          ...rest,
+          props: {
+            ...props,
+            options: props.options || [],
+          },
+        };
+      }
       return {
         ...rest,
         props: {
           ...props,
-          options: options || [],
         },
       };
     });
+
     const questionData: any = { ...question };
     questionData.componentList = modifiedComponentList || [];
     return questionData;
@@ -285,7 +293,7 @@ export class QuestionService {
     Object.assign(questionTmp, { title, description, css, js });
 
     // componentList 转换成对象
-    const questionComponentList = await this.createComponentList(componentList);
+    const questionComponentList = await this.createComponentList(questionTmp, componentList);
 
     questionTmp.componentList = questionComponentList;
     const result = await this.questionRepository.save(questionTmp);
@@ -294,7 +302,7 @@ export class QuestionService {
   }
 
   // 创建问卷组件
-  async createComponentList(componentList: Component[]) {
+  async createComponentList(question: Question, componentList: Component[]) {
     return Promise.all(
       componentList.map(async (component) => {
         const ComponentClass: QuestionComponentClass = this.componentTypeToClass[component.type];
@@ -311,17 +319,10 @@ export class QuestionService {
           title: component.title,
           isHidden: component.isHidden || false,
           disabled: component.disabled || false,
+          question,
         });
 
-        const componentRepository = this[`${component.type}Repository`] as Repository<
-          QuestionCheckbox &
-            QuestionInfo &
-            QuestionInput &
-            QuestionParagraph &
-            QuestionRadio &
-            QuestionTextarea &
-            QuestionTitle
-        >;
+        const componentRepository = this[`${component.type}Repository`] as Repository<ComponentType>;
         const compResult = await componentRepository.save(componentTmp);
 
         if (componentTmp instanceof QuestionCheckbox || componentTmp instanceof QuestionRadio) {
@@ -364,15 +365,7 @@ export class QuestionService {
     await this.removeWithComponents(deleteComponentIds);
 
     // 获取已更新的组件实体列表
-    const updatedComponentListObj: Array<
-      | QuestionCheckbox
-      | QuestionInfo
-      | QuestionInput
-      | QuestionParagraph
-      | QuestionRadio
-      | QuestionTextarea
-      | QuestionTitle
-    > = await componentList.reduce(async (accPromise, component) => {
+    const updatedComponentListObj: Array<ComponentType> = await componentList.reduce(async (accPromise, component) => {
       const acc = await accPromise;
       const ComponentClass: QuestionComponentClass = this.componentTypeToClass[component.type];
       const componentTmp = new ComponentClass();
@@ -393,15 +386,9 @@ export class QuestionService {
       });
 
       // 组件 repository
-      const componentRepository = this[`${ComponentNumberToType[componentTmp.type]}Repository`] as Repository<
-        QuestionCheckbox &
-          QuestionInfo &
-          QuestionInput &
-          QuestionParagraph &
-          QuestionRadio &
-          QuestionTextarea &
-          QuestionTitle
-      >;
+      const componentRepository = this[
+        `${ComponentNumberToType[componentTmp.type]}Repository`
+      ] as Repository<ComponentType>;
       // 保存组件到数据库
       await componentRepository.save(componentTmp);
 
@@ -434,10 +421,7 @@ export class QuestionService {
    * 组件选项，只有 questionCheckbox/questionRadio 时才需要
    * @param component - 前端传过来的组件
    */
-  async createOptions<T extends QuestionCheckboxOption | QuestionRadioOption>(
-    componentTmp: QuestionCheckbox | QuestionRadio,
-    component: Component,
-  ) {
+  async createOptions<T extends ComponentOptionType>(componentTmp: ComponentHaveOptionType, component: Component) {
     const optionMap: Record<string, { optionFactory: () => T; checked?: boolean }> = {
       questionCheckbox: {
         optionFactory: () => new QuestionCheckboxOption() as T,
@@ -469,13 +453,10 @@ export class QuestionService {
   }
 
   // 更新选项数据
-  async updateOptions<T extends QuestionCheckboxOption | QuestionRadioOption>(
-    componentTmp: QuestionCheckbox | QuestionRadio,
-    component: Component,
-  ) {
+  async updateOptions<T extends ComponentOptionType>(componentTmp: ComponentHaveOptionType, component: Component) {
     // 判断选项数据是否已经存在，存在则更新，不存在则删除
     // 获取旧的选项数据
-    const oldOptions: (QuestionCheckboxOption | QuestionRadioOption)[] = await this.getOptions(componentTmp);
+    const oldOptions: ComponentOptionType[] = await this.getOptions(componentTmp);
 
     // 获取新的选项数据
     const optionMap: Record<string, { optionFactory: () => T; checked?: boolean }> = {
@@ -535,9 +516,7 @@ export class QuestionService {
    * @param componentTmp - 组件实体
    * @returns
    */
-  async getOptions(
-    componentTmp: QuestionCheckbox | QuestionRadio,
-  ): Promise<Array<QuestionCheckboxOption | QuestionRadioOption>> {
+  async getOptions(componentTmp: ComponentHaveOptionType): Promise<Array<ComponentOptionType>> {
     if (componentTmp instanceof QuestionCheckbox) {
       return this.questionCheckboxOptionRepository.find({
         where: {
@@ -563,7 +542,7 @@ export class QuestionService {
    * 保存选项
    * @param option - 选项实体
    */
-  async saveOption<T extends QuestionCheckboxOption | QuestionRadioOption>(option: T) {
+  async saveOption<T extends ComponentOptionType>(option: T) {
     try {
       if (option instanceof QuestionCheckboxOption) {
         return await this.questionCheckboxOptionRepository.save(option);
@@ -636,114 +615,75 @@ export class QuestionService {
 
   // 复制问卷
   async copy(id: number) {
-    let returnData: ReturnData;
     const question = await this.findOne(id);
     if (!question) {
-      returnData = {
-        errno: Errno.ERRNO_12,
-        msg: ErrMsg[Errno.ERRNO_12],
-      };
-      return returnData;
+      return '';
     }
     const newId = await this.getNewestId();
 
     const copiedQuestion: Question = { ...question };
     copiedQuestion._id = newId;
+    // 先保存 question
+    const newQuestion = await this.questionRepository.save(copiedQuestion);
 
     const dbComponentList = this.getComponentList(question);
     const copiedComponentList = await Promise.all(
       dbComponentList.map(async (item: ComponentDB) => {
         // eslint-disable-next-line @typescript-eslint/no-shadow
         const [id, type] = Object.entries(item)[0];
-        const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<
-          QuestionCheckbox &
-            QuestionInfo &
-            QuestionInput &
-            QuestionParagraph &
-            QuestionRadio &
-            QuestionTextarea &
-            QuestionTitle
-        >;
-        const compResult: QuestionCheckbox &
-          QuestionInfo &
-          QuestionInput &
-          QuestionParagraph &
-          QuestionRadio &
-          QuestionTextarea &
-          QuestionTitle = await componentRepository.findOne({
+        const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<ComponentType>;
+        const compResult: ComponentType = await componentRepository.findOne({
           where: {
             fe_id: id,
           },
+          relations: ['question'],
         });
-        // 复制组件
-        const copiedComponent = { ...compResult };
+        // 复制组件，深拷贝
+        const copiedComponent = cloneDeep(compResult);
         const newFeId = nanoid(); // 使用 nanoid() 生成新的 fe_id 值
         copiedComponent.fe_id = newFeId;
-        const newOptions = await this.copyOptions(compResult);
-        copiedComponent.options = newOptions;
+        copiedComponent.question = newQuestion;
+        if (copiedComponent instanceof QuestionCheckbox || copiedComponent instanceof QuestionRadio) {
+          copiedComponent.options = []; // 断开与旧选项关联
+        }
+        // 保存组件
+        const newComponent = await componentRepository.save(copiedComponent);
+        if (compResult instanceof QuestionCheckbox || compResult instanceof QuestionRadio) {
+          const newOptions: ComponentOptionType[] = await this.copyOptions(
+            compResult,
+            newComponent as ComponentHaveOptionType,
+          );
+          (copiedComponent as { options: ComponentOptionType[] }).options = newOptions || [];
+        }
 
-        // 数据里面的 props_aa: bb 转成 {props: {aa: bb}}
-        // const props = {};
-        // Object.keys(compResult).forEach((key) => {
-        //   if (key.startsWith('props_')) {
-        //     const propKey = key.replace('props_', '');
-        //     props[propKey] = compResult[key];
-        //     delete compResult[key]; // 删除原来的 props_xxx 属性
-        //   }
-        // });
-        // const rest = {...compResult, props, type: `${ComponentNumberToType[type]}`};
-        // return rest;
+        return { [newFeId]: type };
       }),
     );
-
-    // const modifiedComponentList = componentList.map((item) => {
-    //   const {props, options = [], ...rest} = item;
-
-    //   return {
-    //     ...rest,
-    //     props: {
-    //       ...props,
-    //       options: options || [],
-    //     },
-    //   };
-    // });
-    // const questionData: any = {...question};
-    // questionData.componentList = modifiedComponentList || [];
-    // return questionData;
-
-    copiedQuestion.componentList = copiedComponentList;
-
+    copiedQuestion.componentList = copiedComponentList.map((component: ComponentDB) => JSON.stringify(component));
     const result = await this.questionRepository.save(copiedQuestion);
-    if (result['_id']) {
-      returnData = {
-        errno: Errno.SUCCESS,
-        data: {
-          id: result['_id'],
-        },
-      };
-      return returnData;
-    }
-    returnData = {
-      errno: Errno.ERRNO_11,
-      msg: ErrMsg[Errno.ERRNO_11],
-    };
-    return returnData;
+    return result;
+    // return await this.convertQuestionToFront(result);
   }
 
   // 更新选项数据
   async copyOptions(
-    componentTmp: QuestionCheckbox | QuestionRadio,
-  ): Promise<(QuestionCheckboxOption | QuestionRadioOption)[]> {
+    componentTmp: ComponentHaveOptionType,
+    newComponent: ComponentHaveOptionType,
+  ): Promise<ComponentOptionType[]> {
     // 判断选项数据是否已经存在，存在则复制
     // 获取旧的选项数据
-    const oldOptions: (QuestionCheckboxOption | QuestionRadioOption)[] = await this.getOptions(componentTmp);
+    const oldOptions: ComponentOptionType[] = componentTmp.options || [];
 
     // 复制选项数据并保存到数据库中
-    const newOptions: (QuestionCheckboxOption | QuestionRadioOption)[] = [];
+    const newOptions: ComponentOptionType[] = [];
     for (const oldOption of oldOptions) {
-      const newOption = { ...oldOption }; // 复制选项数据
-      delete newOption._id; // 清除旧的主键
-      const savedOption = await this.saveOption(newOption); // 保存新选项数据到数据库
+      // 深拷贝
+      const copiedOption = cloneDeep(oldOption);
+      // 删除主键
+      delete copiedOption._id;
+      // 更新 component 关联
+      copiedOption.component = newComponent;
+      const savedOption = await this.saveOption(copiedOption); // 保存新选项数据到数据库
       newOptions.push(savedOption); // 获取新的主键并添加到列表中
     }
 
@@ -801,15 +741,7 @@ export class QuestionService {
       // 删除旧组件
       const promises = deleteComponentIds.map(async (deleteId: ComponentDB) => {
         const [id, type] = Object.entries(deleteId)[0];
-        const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<
-          QuestionCheckbox &
-            QuestionInfo &
-            QuestionInput &
-            QuestionParagraph &
-            QuestionRadio &
-            QuestionTextarea &
-            QuestionTitle
-        >;
+        const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<ComponentType>;
         const componentToRemove = await componentRepository.findOne({
           where: {
             fe_id: id,
@@ -818,7 +750,7 @@ export class QuestionService {
         if (componentToRemove) {
           const hasOptions = componentOptionType.includes(componentToRemove.type);
           if (hasOptions) {
-            await this.removeOptions(componentToRemove);
+            await this.removeOptions(componentToRemove as ComponentHaveOptionType);
           }
           await componentRepository.remove(componentToRemove);
         }
@@ -835,14 +767,14 @@ export class QuestionService {
    * 删除组件
    * @param deleteComponent - 要删除的组件实体
    */
-  async removeOptions(deleteComponent: QuestionCheckbox | QuestionRadio) {
+  async removeOptions(deleteComponent: ComponentHaveOptionType) {
     try {
       // 删除旧组件
       // eslint-disable-next-line @typescript-eslint/naming-convention
       const { fe_id, type } = deleteComponent;
-      const optionRepository = this[`${ComponentNumberToType[type]}OptionRepository`] as Repository<
-        QuestionCheckboxOption | QuestionRadioOption
-      >;
+      const optionRepository = this[
+        `${ComponentNumberToType[type]}OptionRepository`
+      ] as Repository<ComponentOptionType>;
       const queryBuilder = optionRepository.createQueryBuilder('option');
       const optionToRemove = await queryBuilder.where('option.component_fe_id = :fe_id', { fe_id }).getMany();
       if (optionToRemove.length > 0) {

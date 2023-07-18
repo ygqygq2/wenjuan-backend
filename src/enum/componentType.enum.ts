@@ -47,3 +47,5 @@ export const ComponentNumberToType: Record<ComponentTypeNumber, ComponentType> =
   [ComponentTypeNumber.QUESTION_TEXTAREA]: ComponentType.QUESTION_TEXTAREA,
   [ComponentTypeNumber.QUESTION_TITLE]: ComponentType.QUESTION_TITLE,
 };
+
+export const componentOptionType = [1, 5];

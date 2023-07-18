@@ -56,9 +56,27 @@ export class QuestionController {
 
   // 复制问卷
   @Post('/duplicate/:id')
-  copy(@Param('id') id: string) {
-    // 获取最新 id
-    return this.questionService.copy(+id);
+  async copy(@Param('id') id: string): Promise<ReturnData> {
+    try {
+      const questionData = await this.questionService.copy(+id);
+      if (!questionData) {
+        return {
+          errno: Errno.ERRNO_12,
+          msg: ErrMsg[Errno.ERRNO_12],
+        };
+      }
+      return {
+        errno: Errno.SUCCESS,
+        data: {
+          id: questionData._id,
+        },
+      };
+    } catch (error) {
+      return {
+        errno: Errno.ERRNO_11,
+        msg: ErrMsg[Errno.ERRNO_11],
+      };
+    }
   }
 
   // 接收到的是 {ids: [1, 2, 3]} 这样的数据
