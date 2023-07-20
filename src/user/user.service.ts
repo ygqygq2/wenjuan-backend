@@ -8,12 +8,14 @@ import { Logs } from '@/logs/logs.entity';
 import { Roles } from '@/roles/roles.entity';
 
 import { GetUserDto } from './dto/get-user.dto';
+import { Profile } from './profile.entity';
 import { User } from './user.entity';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(Profile) private readonly profileRepository: Repository<Profile>,
     @InjectRepository(Logs) private readonly logsRepository: Repository<Logs>,
     @InjectRepository(Roles)
     private readonly rolesRepository: Repository<Roles>,
@@ -71,7 +73,7 @@ export class UserService {
     return this.userRepository.findOne({ where: { id } });
   }
 
-  async create(user: Partial<User>) {
+  async create(user: Partial<User>, profile?: Partial<Profile>) {
     if (!user.roles) {
       const role = await this.rolesRepository.findOne({ where: { id: 2 } });
       user.roles = [role];
@@ -86,6 +88,11 @@ export class UserService {
     }
     const userTmp = this.userRepository.create(user);
     const res = await this.userRepository.save(userTmp);
+    const profileTmp = this.profileRepository.create({
+      nickname: profile.nickname,
+      user: res,
+    });
+    await this.profileRepository.save(profileTmp);
     return res;
   }
 

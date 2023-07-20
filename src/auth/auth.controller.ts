@@ -1,6 +1,7 @@
 import { Body, ClassSerializerInterceptor, Controller, Get, Post, UseFilters, UseInterceptors } from '@nestjs/common';
 
 import { Public } from '@/decorators/auth.decorator';
+import { ErrMsg, Errno } from '@/enum/errno.enum';
 import { TypeormFilter } from '@/filters/typeorm.filter';
 
 import { AuthService } from './auth.service';
@@ -28,6 +29,13 @@ export class AuthController {
   async signin(@Body() dto: SigninUserDto) {
     const { username, password } = dto;
     const token = await this.authService.signin(username, password);
+    // 判断是否返回正确 token
+    if (!token) {
+      return {
+        errno: Errno.ERRNO_21,
+        msg: ErrMsg[Errno.ERRNO_21],
+      };
+    }
     return {
       errno: 0,
       data: {
@@ -36,9 +44,20 @@ export class AuthController {
     };
   }
 
+  @Public()
   @Post('/register')
-  signup(@Body() dto: SigninUserDto) {
-    const { username, password } = dto;
-    return this.authService.signup(username, password);
+  async signup(@Body() dto: SigninUserDto) {
+    const { username, password, nickname } = dto;
+    const data = await this.authService.signup(username, password, nickname);
+    // 判断是否注册成功
+    if (!data) {
+      return {
+        errno: Errno.ERRNO_20,
+        msg: ErrMsg[Errno.ERRNO_20],
+      };
+    }
+    return {
+      errno: 0,
+    };
   }
 }

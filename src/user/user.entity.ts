@@ -26,6 +26,9 @@ export class User {
   @Column()
   password: string;
 
+  @Column()
+  salt: string;
+
   @OneToMany(() => Logs, (logs) => logs.user, { cascade: true })
   logs: Logs[];
 

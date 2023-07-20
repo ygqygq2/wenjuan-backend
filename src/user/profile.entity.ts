@@ -7,16 +7,16 @@ export class Profile {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ default: '' })
   nickname: string;
 
-  @Column()
+  @Column({ default: 1 })
   gender: number;
 
-  @Column()
+  @Column({ default: '' })
   photo: string;
 
-  @Column()
+  @Column({ default: '' })
   address: string;
 
   @OneToOne(() => User, { onDelete: 'CASCADE' })

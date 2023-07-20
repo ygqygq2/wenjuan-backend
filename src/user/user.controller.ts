@@ -50,14 +50,12 @@ export class UserController {
   @Get()
   getUsers(@Query() query: GetUserDto): any {
     return this.userService.findAll(query);
-    // return this.userService.getUsers();
   }
 
   @Post()
   addUser(@Body(CreateUserPipe) dto: CreateUserDto): any {
     const user = dto as User;
     return this.userService.create(user);
-    // return this.userService.addUser();
   }
 
   @Patch('/:id')
@@ -85,7 +83,6 @@ export class UserController {
     // 这里 req 中的 user 是通过 AuthGuard('jwt') 中的 validate 方法返回的 PassportModule 来添加的
     // @Req() req
   ): Promise<any> {
-    // console.log('🚀 ~ file: user.controller.ts:84~ UserController~ getUserProfile~ Req', req.user);
     const result = await this.userService.findProfile(id);
     let data = {};
     if (result.id) {
@@ -117,7 +114,7 @@ export class UserController {
   }
 
   // @Get()
-  // getUser(@Param() '/:id'): any{
+  // getUser(@Param() '/:id'): any {
   //   return ""
   // }
 }

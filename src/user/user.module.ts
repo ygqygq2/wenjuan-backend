@@ -6,13 +6,14 @@ import { Logs } from '@/logs/logs.entity';
 
 import { Roles } from '@/roles/roles.entity';
 
+import { Profile } from './profile.entity';
 import { UserController } from './user.controller';
 import { User } from './user.entity';
 import { UserService } from './user.service';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Logs, Roles])],
+  imports: [TypeOrmModule.forFeature([User, Profile, Logs, Roles])],
   controllers: [UserController],
   providers: [UserService],
   exports: [UserService],
