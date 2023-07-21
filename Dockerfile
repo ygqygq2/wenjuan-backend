@@ -1,7 +1,7 @@
 ###################
 # BUILD FOR LOCAL DEVELOPMENT
 ###################
-FROM node:19.5.0 As development
+FROM node:19.5.0-alpine As development
 RUN curl -f https://get.pnpm.io/v6.16.js | node - add --global pnpm
 
 WORKDIR /app
@@ -18,7 +18,7 @@ USER node
 ###################
 # BUILD FOR PRODUCTION
 ###################
-FROM node:19.5.0 As builder
+FROM node:19.5.0-alpine As builder
 RUN curl -f https://get.pnpm.io/v6.16.js | node - add --global pnpm
 
 WORKDIR /app

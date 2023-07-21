@@ -28,20 +28,22 @@ export class AuthController {
   @Post('/login')
   async signin(@Body() dto: SigninUserDto) {
     const { username, password } = dto;
-    const token = await this.authService.signin(username, password);
-    // 判断是否返回正确 token
-    if (!token) {
+    try {
+      const token = await this.authService.signin(username, password);
+      // 判断是否返回正确 token
+      return {
+        errno: 0,
+        data: {
+          token,
+        },
+      };
+    } catch (error) {
+      console.error(error);
       return {
         errno: Errno.ERRNO_21,
         msg: ErrMsg[Errno.ERRNO_21],
       };
     }
-    return {
-      errno: 0,
-      data: {
-        token,
-      },
-    };
   }
 
   @Public()
