@@ -4,6 +4,8 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 
+import { ErrMsg, Errno } from '@/enum/errno.enum';
+
 import { UserService } from '../user/user.service';
 
 @Injectable()
@@ -27,31 +29,33 @@ export class AuthService {
       const isPasswordMatch = await argon2.verify(storedHashedPassword, salt + hashedPassword);
       return isPasswordMatch;
     } catch (error) {
+      console.error(error);
       throw new UnauthorizedException('Failed to verify hashedPassword');
     }
   }
 
   async signin(username: string, hashedPassword: string) {
     const user = await this.userService.find(username);
-    if (user) {
-      // password 为数据库字段，其实是已经加密过的
-      const { password = '', salt = '' } = user;
-      const verifyResult = await this.verifyPassword(password, salt, hashedPassword);
-      // 生成 token
-      if (verifyResult) {
-        return this.jwtService.signAsync(
-          {
-            username: user.username,
-            sub: user.id,
-          },
-          // 局部设置过期时间
-          // {
-          //   expiresIn: '1h',
-          // },
-        );
-      }
+    if (!user) {
+      return null;
     }
-    throw new UnauthorizedException();
+    // password 为数据库字段，其实是已经加密过的
+    const { password = '', salt = '' } = user;
+    const verifyResult = await this.verifyPassword(password, salt, hashedPassword);
+    // 生成 token
+    if (verifyResult) {
+      return this.jwtService.signAsync(
+        {
+          username: user.username,
+          sub: user.id,
+        },
+        // 局部设置过期时间
+        {
+          expiresIn: '12h',
+        },
+      );
+    }
+    throw new UnauthorizedException(ErrMsg[Errno.ERRNO_22]);
   }
 
   async signup(username: string, hashedPassword: string, nickname: string) {
