@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 
 import { Logs } from '@/logs/logs.entity';
+import { Question } from '@/question/question.entity';
 import { Roles } from '@/roles/roles.entity';
 
 import { Profile } from './profile.entity';
@@ -38,6 +39,9 @@ export class User {
 
   @OneToOne(() => Profile, (profile) => profile.user, { cascade: true })
   profile: Profile;
+
+  @OneToMany(() => Question, (question) => question.user)
+  questions: Question[];
 
   @AfterInsert()
   afterInsert() {

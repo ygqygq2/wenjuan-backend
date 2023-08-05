@@ -1,5 +1,7 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+
+import { User } from '@/user/user.entity';
 
 @Entity()
 export class Question {
@@ -59,4 +61,10 @@ export class Question {
     default: '',
   })
   componentList: string[];
+
+  // 问卷的创建者
+  @Expose()
+  @Column()
+  @ManyToOne(() => User, (user) => user.questions)
+  user: User;
 }

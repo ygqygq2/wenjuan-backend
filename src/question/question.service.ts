@@ -16,6 +16,8 @@ import {
 } from '@/enum/componentType.enum';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
+import { Role } from '@/enum/roles.enum';
+
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { Question } from './question.entity';
 import { QuestionCheckbox } from './questionCheckbox.entity';
@@ -79,7 +81,7 @@ export class QuestionService {
   }
 
   // 查询问卷列表，根据接收到的参数查询，SearchOptions
-  async findAll(searchOptions: SearchOptions) {
+  async findAllForCreator(searchOptions: SearchOptions, userRole: Role, userId: number) {
     const { keyword, isStar, isDeleted, page = 1, pageSize = 10 } = searchOptions;
 
     const queryBuilder = this.questionRepository.createQueryBuilder('question');
@@ -97,6 +99,14 @@ export class QuestionService {
     // 设置 take 和 skip
     const startIndex = (page - 1) * pageSize;
     queryBuilder.take(pageSize).skip(startIndex);
+
+    // 根据用户角色和身份进行查询条件的设置
+    if (userRole === Role.User) {
+      // 用户查询自己的问卷的逻辑
+      queryBuilder.andWhere('question.userId = :userId', { userId });
+    } else {
+      throw new Error('Invalid role');
+    }
 
     // isDeleted, 没有传值时，默认为 false
     const isDeletedValue = isDeleted === 'true' || false;

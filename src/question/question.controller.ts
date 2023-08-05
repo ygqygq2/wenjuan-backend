@@ -1,9 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 
+import { Roles } from '@/decorators';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
+
+import { Role } from '@/enum/roles.enum';
+import { RolesGuard } from '@/guards';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionService } from './question.service';
+import {AuthGuard} from '@nestjs/passport';
 
 @Controller('question')
 export class QuestionController {
@@ -26,8 +31,10 @@ export class QuestionController {
 
   // 查询问卷列表，根据接收到的参数查询，len, isDeleted, isStar
   @Get()
+  @Roles(Role.Admin, Role.User)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
   findAll(@Query() queryParams: any) {
-    return this.questionService.findAll(queryParams);
+    return this.questionService.findAllForCreator(queryParams);
   }
 
   @Get(':id')
