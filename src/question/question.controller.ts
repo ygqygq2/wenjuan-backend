@@ -1,18 +1,28 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+
+import { AuthGuard } from '@nestjs/passport';
 
 import { Roles } from '@/decorators';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
 import { Role } from '@/enum/roles.enum';
+
 import { RolesGuard } from '@/guards';
+import { UserService } from '@/user/user.service';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionService } from './question.service';
-import {AuthGuard} from '@nestjs/passport';
 
 @Controller('question')
 export class QuestionController {
-  constructor(private readonly questionService: QuestionService) {}
+  constructor(private readonly questionService: QuestionService, private readonly userService: UserService) {}
+
+  private async getUserInfoFromRequest(request: any): Promise<{ userId: number; isAdmin: boolean }> {
+    const { userId } = request.user;
+    const user = await this.userService.findOne(userId);
+    const isAdmin = user.getRolesList().includes(Role.Admin);
+    return { userId, isAdmin };
+  }
 
   // 没有 question id 时
   @Post()
@@ -33,8 +43,9 @@ export class QuestionController {
   @Get()
   @Roles(Role.Admin, Role.User)
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  findAll(@Query() queryParams: any) {
-    return this.questionService.findAllForCreator(queryParams);
+  async findAll(@Query() queryParams: any, @Req() request) {
+    const { userId, isAdmin } = await this.getUserInfoFromRequest(request);
+    return this.questionService.findAllForCreator(queryParams, userId, isAdmin);
   }
 
   @Get(':id')
@@ -57,8 +68,11 @@ export class QuestionController {
 
   // 更新问卷
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateQuestionDto: UpdateQuestionDto) {
-    return this.questionService.saveQuestion(+id, updateQuestionDto);
+  @Roles(Role.Admin, Role.User)
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  async update(@Param('id') id: string, @Body() updateQuestionDto: UpdateQuestionDto, @Req() request) {
+    const { userId } = await this.getUserInfoFromRequest(request);
+    return this.questionService.saveQuestion(+id, updateQuestionDto, userId);
   }
 
   // 复制问卷

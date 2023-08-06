@@ -1,14 +1,4 @@
-import {
-  AfterInsert,
-  AfterRemove,
-  Column,
-  Entity,
-  JoinTable,
-  ManyToMany,
-  OneToMany,
-  OneToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Logs } from '@/logs/logs.entity';
 import { Question } from '@/question/question.entity';
@@ -43,13 +33,8 @@ export class User {
   @OneToMany(() => Question, (question) => question.user)
   questions: Question[];
 
-  @AfterInsert()
-  afterInsert() {
-    console.log('afterInsert', this.id, this.username);
-  }
-
-  @AfterRemove()
-  afterRemove() {
-    console.log('afterRemove', this.id, this.username);
+  // 获取用户角色列表
+  getRolesList(): number[] {
+    return this.roles.map((role) => role.id);
   }
 }

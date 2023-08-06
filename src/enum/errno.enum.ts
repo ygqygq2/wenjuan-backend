@@ -8,6 +8,7 @@ export enum Errno {
   ERRNO_20 = 20,
   ERRNO_21 = 21,
   ERRNO_22 = 22,
+  ERRNO_23 = 23,
 }
 
 export const ErrMsg: Record<Errno, string> = {
@@ -19,4 +20,5 @@ export const ErrMsg: Record<Errno, string> = {
   [Errno.ERRNO_20]: '注册失败',
   [Errno.ERRNO_21]: '登录失败',
   [Errno.ERRNO_22]: '用户或密码错误',
+  [Errno.ERRNO_23]: '用户不存在',
 };

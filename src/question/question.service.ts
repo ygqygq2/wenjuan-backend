@@ -16,7 +16,7 @@ import {
 } from '@/enum/componentType.enum';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
-import { Role } from '@/enum/roles.enum';
+import { UserService } from '@/user/user.service';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { Question } from './question.entity';
@@ -76,12 +76,13 @@ export class QuestionService {
     // @ts-ignore
     @InjectRepository(QuestionTitle) private readonly questionTitleRepository: Repository<QuestionTitle>,
     private readonly redisService: RedisService,
+    private readonly userService: UserService,
   ) {
     this.redis = this.redisService.getClient();
   }
 
   // 查询问卷列表，根据接收到的参数查询，SearchOptions
-  async findAllForCreator(searchOptions: SearchOptions, userRole: Role, userId: number) {
+  async findAllForCreator(searchOptions: SearchOptions, userId: number, isAdmin: boolean) {
     const { keyword, isStar, isDeleted, page = 1, pageSize = 10 } = searchOptions;
 
     const queryBuilder = this.questionRepository.createQueryBuilder('question');
@@ -100,12 +101,9 @@ export class QuestionService {
     const startIndex = (page - 1) * pageSize;
     queryBuilder.take(pageSize).skip(startIndex);
 
-    // 根据用户角色和身份进行查询条件的设置
-    if (userRole === Role.User) {
-      // 用户查询自己的问卷的逻辑
+    // 用户查询自己的问卷的逻辑
+    if (!isAdmin) {
       queryBuilder.andWhere('question.userId = :userId', { userId });
-    } else {
-      throw new Error('Invalid role');
     }
 
     // isDeleted, 没有传值时，默认为 false
@@ -258,7 +256,7 @@ export class QuestionService {
   }
 
   // 保存问卷
-  async saveQuestion(id: number, updateQuestionDto: UpdateQuestionDto) {
+  async saveQuestion(id: number, updateQuestionDto: UpdateQuestionDto, userId: number) {
     const question = await this.findOne(+id);
 
     const { title, description, css, js, componentList, isStar, isPublished, isDeleted } = updateQuestionDto;
@@ -267,6 +265,13 @@ export class QuestionService {
     if (!question) {
       return this.createQuestion(title, description, css, js, componentList);
     }
+
+    // 更新 userId
+    const user = await this.userService.findOne(userId);
+    if (!user) {
+      throw new Error(ErrMsg[Errno.ERRNO_23]);
+    }
+    question.user = user;
 
     // 只有传了值才更新
     if (title !== undefined) {

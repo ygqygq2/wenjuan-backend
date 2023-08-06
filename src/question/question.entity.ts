@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { User } from '@/user/user.entity';
 
@@ -64,7 +64,7 @@ export class Question {
 
   // 问卷的创建者
   @Expose()
-  @Column()
+  @JoinColumn()
   @ManyToOne(() => User, (user) => user.questions)
   user: User;
 }
