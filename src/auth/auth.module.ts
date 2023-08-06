@@ -1,7 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 
@@ -9,10 +8,11 @@ import { ConfigEnum } from '@/enum/config.enum';
 import { UserModule } from '@/user/user.module';
 
 import { AuthController } from './auth.controller';
-import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './auth.strategy';
+import { CaslAbilityService } from './casl-ability.service';
 
+@Global()
 @Module({
   imports: [
     UserModule,
@@ -30,14 +30,8 @@ import { JwtStrategy } from './auth.strategy';
       inject: [ConfigService],
     }),
   ],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    {
-      provide: APP_GUARD,
-      useClass: AuthGuard,
-    },
-  ],
+  providers: [AuthService, JwtStrategy, CaslAbilityService],
   controllers: [AuthController],
+  exports: [CaslAbilityService],
 })
 export class AuthModule {}

@@ -1,5 +1,6 @@
 import { Global, Logger, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as dotenv from 'dotenv';
 import * as Joi from 'joi';
@@ -9,7 +10,9 @@ import { connectionParams } from '../ormconfig';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { JwtGuard } from './guards';
 import { LogsModule } from './logs/logs.module';
+import { MenusModule } from './menus/menus.module';
 import { QuestionModule } from './question/question.module';
 import { RolesModule } from './roles/roles.module';
 import { StatModule } from './stat/stat.module';
@@ -47,11 +50,12 @@ const envFilePath = `.env.${process.env.NODE_ENV || 'development'}`;
     LogsModule,
     RolesModule,
     AuthModule,
+    MenusModule,
     QuestionModule,
     StatModule,
   ],
   controllers: [AppController],
-  providers: [AppService, Logger],
+  providers: [AppService, Logger, Reflector, { provide: 'APP_GUARD', useClass: JwtGuard }],
   exports: [Logger],
 })
 export class AppModule {}

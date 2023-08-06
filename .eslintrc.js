@@ -144,6 +144,10 @@ module.exports = {
         },
       },
     ],
+    'jest/expect-expect': [
+      'error',
+      { assertFunctionNames: ['expect', 'request.*.expect', 'spec.*', '*.step*.spec', '*.cleanup*'] },
+    ],
   },
   settings: {
     extensions: ['.ts', '.d.ts', '.cts', '.mts', '.js', '.cjs', 'mjs', '.json'],

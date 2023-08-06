@@ -1,7 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
-import { AuthGuard } from '@nestjs/passport';
-
 import { Roles } from '@/decorators';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
@@ -42,7 +40,7 @@ export class QuestionController {
   // 查询问卷列表，根据接收到的参数查询，len, isDeleted, isStar
   @Get()
   @Roles(Role.Admin, Role.User)
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(RolesGuard)
   async findAll(@Query() queryParams: any, @Req() request) {
     const { userId, isAdmin } = await this.getUserInfoFromRequest(request);
     return this.questionService.findAllForCreator(queryParams, userId, isAdmin);
@@ -69,7 +67,7 @@ export class QuestionController {
   // 更新问卷
   @Patch(':id')
   @Roles(Role.Admin, Role.User)
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(RolesGuard)
   async update(@Param('id') id: string, @Body() updateQuestionDto: UpdateQuestionDto, @Req() request) {
     const { userId } = await this.getUserInfoFromRequest(request);
     return this.questionService.saveQuestion(+id, updateQuestionDto, userId);

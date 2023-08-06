@@ -7,7 +7,7 @@ import { Request } from 'express';
 
 import { ConfigEnum } from '@/enum/config.enum';
 
-import { IS_PUBLIC_KEY } from './constants';
+import { IS_PUBLIC_KEY } from '../auth/constants';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
