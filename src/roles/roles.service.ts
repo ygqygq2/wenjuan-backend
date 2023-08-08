@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -26,6 +26,10 @@ export class RolesService {
         id,
       },
     });
+  }
+
+  findByIds(ids: number[]) {
+    return this.roleRepository.findBy({ id: In(ids) });
   }
 
   async update(id: number, updateRoleDto: UpdateRoleDto) {

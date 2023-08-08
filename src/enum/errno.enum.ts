@@ -9,6 +9,8 @@ export enum Errno {
   ERRNO_21 = 21,
   ERRNO_22 = 22,
   ERRNO_23 = 23,
+  ERRNO_24 = 24,
+  ERRNO_25 = 25,
 }
 
 export const ErrMsg: Record<Errno, string> = {
@@ -21,4 +23,6 @@ export const ErrMsg: Record<Errno, string> = {
   [Errno.ERRNO_21]: '登录失败',
   [Errno.ERRNO_22]: '用户或密码错误',
   [Errno.ERRNO_23]: '用户不存在',
+  [Errno.ERRNO_24]: '查询角色失败',
+  [Errno.ERRNO_25]: '禁止修改非自己的问卷',
 };

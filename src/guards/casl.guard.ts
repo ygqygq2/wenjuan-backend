@@ -24,7 +24,7 @@ export class CaslGuard implements CanActivate {
     ]) as CaslHandlerType;
 
     // 如果用户未设置上述的任何一个，直接返回 true
-    if (!handlers || !canHandlers || cannotHandlers) {
+    if (!handlers || !canHandlers || !cannotHandlers) {
       return true;
     }
     const req = context.switchToHttp().getRequest();

@@ -3,6 +3,7 @@ import { Expose } from 'class-transformer';
 import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Menus } from '../menus/menus.entity';
+import { Question } from '../question/question.entity';
 import { User } from '../user/user.entity';
 
 @Entity()
@@ -11,14 +12,17 @@ export class Roles {
   @Expose()
   id: number;
 
-  @Column()
   @Expose()
+  @Column()
   name: string;
 
-  @ManyToMany(() => User, (user) => user.roles)
   @Expose()
+  @ManyToMany(() => User, (user) => user.roles)
   users: User[];
 
   @ManyToMany(() => Menus, (menus) => menus.role)
   menus: Menus[];
+
+  @ManyToMany(() => Question, (question) => question.roles)
+  questions: Question[];
 }

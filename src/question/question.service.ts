@@ -16,6 +16,7 @@ import {
 } from '@/enum/componentType.enum';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
+import { RolesService } from '@/roles/roles.service';
 import { UserService } from '@/user/user.service';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -77,6 +78,7 @@ export class QuestionService {
     @InjectRepository(QuestionTitle) private readonly questionTitleRepository: Repository<QuestionTitle>,
     private readonly redisService: RedisService,
     private readonly userService: UserService,
+    private readonly rolesService: RolesService,
   ) {
     this.redis = this.redisService.getClient();
   }
@@ -152,6 +154,7 @@ export class QuestionService {
       where: {
         _id: id,
       },
+      relations: ['user', 'roles'],
     });
 
     if (!question) {
@@ -259,19 +262,24 @@ export class QuestionService {
   async saveQuestion(id: number, updateQuestionDto: UpdateQuestionDto, userId: number) {
     const question = await this.findOne(+id);
 
-    const { title, description, css, js, componentList, isStar, isPublished, isDeleted } = updateQuestionDto;
+    const { title, description, css, js, componentList, isStar, isPublished, isDeleted, roles } = updateQuestionDto;
 
     // 如果数据库中没有该 id 时，则创建数据
     if (!question) {
       return this.createQuestion(title, description, css, js, componentList);
     }
 
-    // 更新 userId
-    const user = await this.userService.findOne(userId);
-    if (!user) {
-      throw new Error(ErrMsg[Errno.ERRNO_23]);
+    // 先判断是否有 user 字段，因为旧数据可能没有 user 字段
+    if (!question.user) {
+      const user = await this.userService.findOne(userId);
+      if (!user) {
+        throw new Error(ErrMsg[Errno.ERRNO_23]);
+      }
+      question.user = user;
+    } else if (question.user.id !== userId) {
+      // 禁止修改别人的问卷
+      throw new Error(ErrMsg[Errno.ERRNO_25]);
     }
-    question.user = user;
 
     // 只有传了值才更新
     if (title !== undefined) {
@@ -294,6 +302,10 @@ export class QuestionService {
     }
     if (isDeleted !== undefined) {
       question.isDeleted = isDeleted;
+    }
+    if (roles !== undefined) {
+      const roleList = await this.rolesService.findByIds(roles);
+      question.roles = roleList;
     }
 
     // 如果 componentList 为 undefined，则将其置为 undefined

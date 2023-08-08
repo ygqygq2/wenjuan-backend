@@ -31,6 +31,7 @@ export const setupApp = (app: INestApplication) => {
     }),
   );
 
+  // 全局序列化拦截器
   // app.useGlobalInterceptors(new SerializeInterceptor());
 
   // helmet 头部安全

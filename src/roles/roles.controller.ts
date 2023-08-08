@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@n
 
 import { Roles } from '@/decorators/roles.decorator';
 
+import { ErrMsg, Errno } from '@/enum/errno.enum';
 import { Role } from '@/enum/roles.enum';
 
 import { RolesGuard } from '@/guards/roles.guard';
@@ -23,8 +24,18 @@ export class RolesController {
 
   @Get()
   // @Roles(Role.User)
-  findAll() {
-    return this.rolesService.findAll();
+  async findAll() {
+    const roles = await this.rolesService.findAll();
+    if (roles) {
+      return {
+        errno: Errno['SUCCESS'],
+        data: roles,
+      };
+    }
+    return {
+      errno: Errno['ERRNO_24'],
+      msg: ErrMsg[Errno.ERRNO_24],
+    };
   }
 
   @Get(':id')

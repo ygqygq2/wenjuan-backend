@@ -1,6 +1,7 @@
 import { Expose } from 'class-transformer';
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
+import { Roles } from '@/roles/roles.entity';
 import { User } from '@/user/user.entity';
 
 @Entity()
@@ -64,7 +65,11 @@ export class Question {
 
   // 问卷的创建者
   @Expose()
-  @JoinColumn()
+  @JoinColumn({ name: 'creator' })
   @ManyToOne(() => User, (user) => user.questions)
   user: User;
+
+  @ManyToMany(() => Roles, (roles) => roles.questions)
+  @JoinTable({ name: 'role_questions' })
+  roles: Roles[];
 }

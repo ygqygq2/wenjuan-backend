@@ -34,4 +34,7 @@ export class UpdateQuestionDto {
   @IsBoolean()
   @IsOptional()
   isStar?: boolean;
+
+  @IsOptional()
+  roles?: number[];
 }
