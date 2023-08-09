@@ -20,6 +20,7 @@ export class User {
   password: string;
 
   @Column()
+  @Exclude()
   salt: string;
 
   @OneToMany(() => Logs, (logs) => logs.user, { cascade: true })

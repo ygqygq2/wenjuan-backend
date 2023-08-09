@@ -1,9 +1,18 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import * as tsconfigPaths from 'tsconfig-paths';
 
 import { DataSource, DataSourceOptions } from 'typeorm';
 
-import { ConfigEnum } from '@/enum/config.enum';
-import { getEntitiesDir, getServerConfig } from '@/utils/config.helper';
+import { ConfigEnum } from './src/enum/config.enum';
+import { getEntitiesDir, getServerConfig } from './src/utils/config.helper';
+
+// 解析 TypeScript 别名
+const { baseUrl, paths } = require('./tsconfig.json').compilerOptions;
+
+tsconfigPaths.register({
+  baseUrl,
+  paths,
+});
 
 // 通过 dotEnv 来解析不同的配置
 export function getConnectionParams() {

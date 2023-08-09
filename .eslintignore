@@ -2,3 +2,4 @@ node_modules/
 dist/
 .eslintrc.js
 webpack-hmr.config.js
+src/migrations/*.ts

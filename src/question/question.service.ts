@@ -105,7 +105,7 @@ export class QuestionService {
 
     // 用户查询自己的问卷的逻辑
     if (!isAdmin) {
-      queryBuilder.andWhere('question.userId = :userId', { userId });
+      queryBuilder.andWhere('question.creator= :userId', { userId });
     }
 
     // isDeleted, 没有传值时，默认为 false
@@ -150,12 +150,13 @@ export class QuestionService {
   }
 
   async findOne(id: number) {
-    const question = await this.questionRepository.findOne({
-      where: {
-        _id: id,
-      },
-      relations: ['user', 'roles'],
-    });
+    const question = await this.questionRepository
+      .createQueryBuilder('question')
+      .leftJoinAndSelect('question.user', 'user')
+      .leftJoinAndSelect('question.roles', 'roles')
+      .select(['question', 'user.id', 'user.username', 'roles.id', 'roles.name'])
+      .where('question._id = :id', { id })
+      .getOne();
 
     if (!question) {
       return null;
@@ -177,7 +178,7 @@ export class QuestionService {
     if (!question) {
       return null;
     }
-    const questionData = this.convertQuestionToFront(question);
+    const questionData = await this.convertQuestionToFront(question);
     return questionData;
   }
 
