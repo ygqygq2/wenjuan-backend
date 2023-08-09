@@ -7,7 +7,10 @@ import { ConfigEnum } from './src/enum/config.enum';
 import { getEntitiesDir, getServerConfig } from './src/utils/config.helper';
 
 // 解析 TypeScript 别名
-const { baseUrl, paths } = require('./tsconfig.json').compilerOptions;
+const baseUrl = '.';
+const paths = {
+  '@/*': ['./src/*'],
+};
 
 tsconfigPaths.register({
   baseUrl,
