@@ -11,7 +11,13 @@ async function bootstrap() {
   // const app= await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {});
   // 默认 express
   // 允许跨域
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: allowedOrigins,
+      credentials: true,
+    },
+  });
   setupApp(app);
 
   const port = typeof config['APP_PORT'] === 'string' ? parseInt(config['APP_PORT'], 10) : 3000;

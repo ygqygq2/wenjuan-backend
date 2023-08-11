@@ -51,4 +51,6 @@ COPY --chown=node:node .env .env.production ./
 VOLUME [ "/app/logs" ]
 EXPOSE 3000
 
+USER node
+
 CMD [ "node", "src/main.js" ]
