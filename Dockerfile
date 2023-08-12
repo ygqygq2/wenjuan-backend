@@ -44,6 +44,7 @@ FROM node:19.5.0-alpine As production
 LABEL maintainer "ygqygq2@qq.com"
 ENV NODE_ENV production
 WORKDIR /app
+COPY package.json ./
 COPY --chown=node:node --from=builder /app/node_modules ./node_modules
 COPY --chown=node:node --from=builder /app/dist ./
 COPY --chown=node:node .env .env.production ./
