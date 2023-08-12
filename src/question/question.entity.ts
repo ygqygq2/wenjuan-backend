@@ -41,8 +41,13 @@ export class Question {
   @Column({ default: false })
   isPublished: boolean;
 
+  @Expose()
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
+
+  @Expose()
+  @Column({ type: 'timestamp', default: null })
+  publishedAt: Date;
 
   // 是否星标
   @Expose()

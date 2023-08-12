@@ -267,7 +267,16 @@ export class QuestionService {
 
     // 如果数据库中没有该 id 时，则创建数据
     if (!question) {
-      return this.createQuestion(title, description, css, js, componentList);
+      return this.createQuestion(title, description, css, js, componentList, userId);
+    }
+
+    // 判断是否已发布问卷，已发布且回答大于 0 ，则禁止修改
+    const answerCount = question.answerCount || 0;
+    if (question.isPublished && answerCount > 0) {
+      return this.generateReturnData({
+        errno: Errno.ERRNO_26,
+        msg: ErrMsg[Errno.ERRNO_26],
+      });
     }
 
     // 先判断是否有 user 字段，因为旧数据可能没有 user 字段
@@ -300,6 +309,7 @@ export class QuestionService {
     }
     if (isPublished !== undefined) {
       question.isPublished = isPublished;
+      question.publishedAt = isPublished ? new Date() : null;
     }
     if (isDeleted !== undefined) {
       question.isDeleted = isDeleted;
@@ -316,9 +326,16 @@ export class QuestionService {
   }
 
   // 创建问卷
-  async createQuestion(title: string, description: string, css: string, js: string, componentList: Component[]) {
+  async createQuestion(
+    title: string,
+    description: string,
+    css: string,
+    js: string,
+    componentList: Component[],
+    userId: number,
+  ) {
     const questionTmp = new Question();
-    Object.assign(questionTmp, { title, description, css, js });
+    Object.assign(questionTmp, { title, description, css, js, creator: userId });
 
     // componentList 转换成对象
     const questionComponentList = await this.createComponentList(questionTmp, componentList);
@@ -326,7 +343,16 @@ export class QuestionService {
     questionTmp.componentList = questionComponentList;
     const result = await this.questionRepository.save(questionTmp);
 
-    return this.generateReturnData(result);
+    if (result['_id']) {
+      return this.generateReturnData({
+        errno: Errno.SUCCESS,
+        data: result,
+      });
+    }
+    return this.generateReturnData({
+      errno: Errno.ERRNO_10,
+      msg: ErrMsg[Errno.ERRNO_10],
+    });
   }
 
   // 创建问卷组件
@@ -622,22 +648,20 @@ export class QuestionService {
     }
 
     const result: Question = await this.questionRepository.save(question);
-    return this.generateReturnData(result);
+    if (result['_id']) {
+      return this.generateReturnData({
+        errno: Errno.SUCCESS,
+        data: result,
+      });
+    }
+    return this.generateReturnData({
+      errno: Errno.ERRNO_10,
+      msg: ErrMsg[Errno.ERRNO_10],
+    });
   }
 
   // 生成返回数据
-  generateReturnData(result: any) {
-    let returnData: ReturnData;
-    if (result['_id']) {
-      returnData = {
-        errno: Errno.SUCCESS,
-      };
-    } else {
-      returnData = {
-        errno: Errno.ERRNO_10,
-        msg: ErrMsg[Errno.ERRNO_10],
-      };
-    }
+  generateReturnData(returnData: ReturnData) {
     return returnData;
   }
 
