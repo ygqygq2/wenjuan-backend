@@ -31,4 +31,8 @@ export class QuestionRadio extends Component {
     onDelete: 'CASCADE',
   })
   options: QuestionRadioOption[];
+
+  getOptions(): QuestionRadioOption[] {
+    return this.options;
+  }
 }

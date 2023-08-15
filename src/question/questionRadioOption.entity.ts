@@ -7,7 +7,7 @@ import { QuestionRadio } from './questionRadio.entity';
 export class QuestionRadioOption {
   @PrimaryGeneratedColumn()
   @Expose()
-  _id: string;
+  _id: number;
 
   // 选项值
   @Expose()

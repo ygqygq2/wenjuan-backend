@@ -28,4 +28,8 @@ export class QuestionCheckbox extends Component {
   })
   @JoinColumn()
   options: QuestionCheckboxOption[];
+
+  getOptions(): QuestionCheckboxOption[] {
+    return this.options;
+  }
 }

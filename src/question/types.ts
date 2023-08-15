@@ -56,6 +56,12 @@ export type SearchOptions = {
 };
 
 // 组件选项实体
-export type ComponentOptionType = QuestionCheckboxOption | QuestionRadioOption;
+export type ComponentOptionType = QuestionCheckboxOption | QuestionRadioOption | null;
 // 有选项的组件实体
 export type ComponentHaveOptionType = QuestionCheckbox | QuestionRadio;
+
+export type ArrayOfType<T> = T[];
+
+export type ComponentOptionMapping = {
+  [key in ComponentTypeNumber]: ComponentOptionType[];
+};

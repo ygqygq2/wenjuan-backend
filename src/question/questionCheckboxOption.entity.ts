@@ -7,7 +7,7 @@ import { QuestionCheckbox } from './questionCheckbox.entity';
 export class QuestionCheckboxOption {
   @PrimaryGeneratedColumn()
   @Expose()
-  _id: string;
+  _id: number;
 
   // 选项值
   @Column()

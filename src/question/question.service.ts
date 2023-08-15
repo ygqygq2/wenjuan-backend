@@ -31,6 +31,7 @@ import { QuestionRadioOption } from './questionRadioOption.entity';
 import { QuestionTextarea } from './questionTextarea.entity';
 import { QuestionTitle } from './questionTitle.entity';
 import {
+  ArrayOfType,
   Component,
   ComponentDB,
   ComponentHaveOptionType,
@@ -175,6 +176,7 @@ export class QuestionService {
 
   async findOneWithComponents(id: number) {
     const question = await this.findOne(+id);
+    console.log('🚀 ~ file: question.service.ts:179 ~ QuestionService ~ findOneWithComponents ~ question:', question);
     if (!question) {
       return null;
     }
@@ -200,7 +202,7 @@ export class QuestionService {
           },
         });
         // 数据里面的 props_aa: bb 转成 {props: {aa: bb}}
-        const props = {};
+        const props: any = {};
         Object.keys(compResult).forEach((key) => {
           if (key.startsWith('props_')) {
             const propKey = key.replace('props_', '');
@@ -208,6 +210,17 @@ export class QuestionService {
             delete compResult[key]; // 删除原来的 props_xxx 属性
           }
         });
+
+        // 有 options 的特殊组件
+        if (
+          (compResult instanceof QuestionCheckbox || compResult instanceof QuestionRadio) &&
+          compResult.options &&
+          compResult.options.length > 0
+        ) {
+          props.options = compResult.options;
+          compResult.options = undefined; // 删除原来的 options 属性
+        }
+
         const rest = { ...compResult, props, type: `${ComponentNumberToType[type]}` };
         return rest;
       }),
@@ -283,12 +296,18 @@ export class QuestionService {
     if (!question.user) {
       const user = await this.userService.findOne(userId);
       if (!user) {
-        throw new Error(ErrMsg[Errno.ERRNO_23]);
+        return this.generateReturnData({
+          errno: Errno.ERRNO_23,
+          msg: ErrMsg[Errno.ERRNO_23],
+        });
       }
       question.user = user;
     } else if (question.user.id !== userId) {
       // 禁止修改别人的问卷
-      throw new Error(ErrMsg[Errno.ERRNO_25]);
+      return this.generateReturnData({
+        errno: Errno.ERRNO_25,
+        msg: ErrMsg[Errno.ERRNO_25],
+      });
     }
 
     // 只有传了值才更新
@@ -451,11 +470,11 @@ export class QuestionService {
         if (existComponentIds.some((item) => Object.prototype.hasOwnProperty.call(item, component.fe_id))) {
           console.log('update options');
           const options = await this.updateOptions(componentTmp, component);
-          componentTmp.options = options;
+          componentTmp.options = options as QuestionCheckboxOption[] | QuestionRadioOption[];
         } else {
           console.log('create options');
           const options = await this.createOptions(componentTmp, component);
-          componentTmp.options = options;
+          componentTmp.options = options as QuestionCheckboxOption[] | QuestionRadioOption[];
         }
       }
 
@@ -475,7 +494,10 @@ export class QuestionService {
    * 组件选项，只有 questionCheckbox/questionRadio 时才需要
    * @param component - 前端传过来的组件
    */
-  async createOptions<T extends ComponentOptionType>(componentTmp: ComponentHaveOptionType, component: Component) {
+  async createOptions<T extends ComponentOptionType>(
+    componentTmp: ComponentHaveOptionType,
+    component: Component,
+  ): Promise<ArrayOfType<ComponentOptionType>> {
     const optionMap: Record<string, { optionFactory: () => T; checked?: boolean }> = {
       questionCheckbox: {
         optionFactory: () => new QuestionCheckboxOption() as T,
@@ -487,7 +509,7 @@ export class QuestionService {
       // 添加其他类型的映射
     };
 
-    const optionIds = [];
+    const options: ArrayOfType<ComponentOptionType> = [];
     // 为了保持原来的选项顺序，使用 for 循环
     for (let i = 0; i < component.props.options.length; i++) {
       const option = component.props.options[i];
@@ -500,17 +522,20 @@ export class QuestionService {
         component: componentTmp,
       });
       const optResult = await this.saveOption(optionTmp);
-      optionIds.push(optResult._id);
+      options.push(optResult);
     }
 
-    return optionIds;
+    return options;
   }
 
   // 更新选项数据
-  async updateOptions<T extends ComponentOptionType>(componentTmp: ComponentHaveOptionType, component: Component) {
+  async updateOptions<T extends ComponentOptionType>(
+    componentTmp: ComponentHaveOptionType,
+    component: Component,
+  ): Promise<ArrayOfType<ComponentOptionType>> {
     // 判断选项数据是否已经存在，存在则更新，不存在则删除
     // 获取旧的选项数据
-    const oldOptions: ComponentOptionType[] = await this.getOptions(componentTmp);
+    const oldOptions: ArrayOfType<ComponentOptionType> = await this.getOptions(componentTmp);
 
     // 获取新的选项数据
     const optionMap: Record<string, { optionFactory: () => T; checked?: boolean }> = {
@@ -527,7 +552,6 @@ export class QuestionService {
     // 前端传过来的 options，包含 _id
     // typeorm 中 new 实体，然后把主键合并到实体中，则会变成更新
     const optionPromises = component.props.options.map(async (option: any) => {
-      // const optionPromises: Promise<string>[] = component.props.options.map(async (option: any) => {
       const optionType = optionMap[component.type];
       // 在每次循环中都通过工厂函数创建一个新的对象
       const optionTmp = optionType.optionFactory();
@@ -537,14 +561,14 @@ export class QuestionService {
         component: componentTmp,
       });
       const optResult = await this.saveOption(optionTmp);
-      return optResult._id;
+      return optResult as T;
     });
 
-    const optionIds = await Promise.all(optionPromises);
+    const options = await Promise.all(optionPromises);
 
     // 删除不再需要的旧数据
     const deleteOptionIds = oldOptions
-      .filter((oldOption) => !optionIds.includes(oldOption._id))
+      .filter((oldOption) => !options.find((opt) => opt._id === oldOption._id))
       .map((oldOption) => oldOption._id);
 
     await Promise.all(
@@ -562,7 +586,7 @@ export class QuestionService {
       }),
     );
 
-    return optionIds;
+    return options;
   }
 
   /**
@@ -570,7 +594,7 @@ export class QuestionService {
    * @param componentTmp - 组件实体
    * @returns
    */
-  async getOptions(componentTmp: ComponentHaveOptionType): Promise<Array<ComponentOptionType>> {
+  async getOptions(componentTmp: ComponentHaveOptionType): Promise<ArrayOfType<ComponentOptionType>> {
     if (componentTmp instanceof QuestionCheckbox) {
       return this.questionCheckboxOptionRepository.find({
         where: {
@@ -596,7 +620,9 @@ export class QuestionService {
    * 保存选项
    * @param option - 选项实体
    */
-  async saveOption<T extends ComponentOptionType>(option: T) {
+  async saveOption<T extends ComponentOptionType>(
+    option: T,
+  ): Promise<(T & QuestionCheckboxOption) | (T & QuestionRadioOption)> {
     try {
       if (option instanceof QuestionCheckboxOption) {
         return await this.questionCheckboxOptionRepository.save(option);

@@ -8,16 +8,6 @@ export enum ComponentType {
   QUESTION_TITLE = 'questionTitle',
 }
 
-export const ComponentTypeText: Record<ComponentType, string> = {
-  [ComponentType.QUESTION_CHECKBOX]: '多选框组件',
-  [ComponentType.QUESTION_INFO]: '问卷标题组件',
-  [ComponentType.QUESTION_INPUT]: '输入框组件',
-  [ComponentType.QUESTION_PARAGRAPH]: '段落组件',
-  [ComponentType.QUESTION_RADIO]: '单选框组件',
-  [ComponentType.QUESTION_TEXTAREA]: '文本组件',
-  [ComponentType.QUESTION_TITLE]: '标题组件',
-};
-
 export enum ComponentTypeNumber {
   QUESTION_CHECKBOX = 1,
   QUESTION_INFO = 2,
