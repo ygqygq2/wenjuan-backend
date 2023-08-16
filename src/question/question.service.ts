@@ -176,7 +176,6 @@ export class QuestionService {
 
   async findOneWithComponents(id: number) {
     const question = await this.findOne(+id);
-    console.log('🚀 ~ file: question.service.ts:179 ~ QuestionService ~ findOneWithComponents ~ question:', question);
     if (!question) {
       return null;
     }

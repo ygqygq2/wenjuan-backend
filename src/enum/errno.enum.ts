@@ -12,6 +12,7 @@ export enum Errno {
   ERRNO_24 = 24,
   ERRNO_25 = 25,
   ERRNO_26 = 26,
+  ERRNO_27 = 27,
 }
 
 export const ErrMsg: Record<Errno, string> = {
@@ -27,4 +28,5 @@ export const ErrMsg: Record<Errno, string> = {
   [Errno.ERRNO_24]: '查询角色失败',
   [Errno.ERRNO_25]: '禁止修改非自己的问卷',
   [Errno.ERRNO_26]: '禁止修改已发布且有回答的问卷',
+  [Errno.ERRNO_27]: '非公开问卷',
 };

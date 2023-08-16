@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 
-import { Roles } from '@/decorators';
+import { Public, Roles } from '@/decorators';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
 
 import { Role } from '@/enum/roles.enum';
@@ -116,5 +116,33 @@ export class QuestionController {
       };
     }
     return returnData;
+  }
+
+  @Public()
+  @Get('/open/:id')
+  async findOneForOpen(@Param('id') id: string) {
+    const questionData = await this.questionService.findOneWithComponents(+id);
+
+    // 判断是否存在
+    if (!questionData) {
+      return {
+        errno: Errno.ERRNO_12,
+        msg: ErrMsg[Errno.ERRNO_12],
+      };
+    }
+
+    const { roles } = questionData;
+    // 判断是否是公开问卷，为空则为公开问卷
+    if (roles.length > 0) {
+      return {
+        errno: Errno.ERRNO_27,
+        msg: ErrMsg[Errno.ERRNO_27],
+      };
+    }
+
+    return {
+      errno: Errno.SUCCESS,
+      data: questionData,
+    };
   }
 }
