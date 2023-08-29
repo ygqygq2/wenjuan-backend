@@ -11,7 +11,6 @@ export class SerializeInterceptor implements NestInterceptor {
     return next.handle().pipe(
       map((data) => {
         console.log('After Interceptor...');
-        // return data;
         return plainToInstance(this.dto, data, {
           // 设置为 true 之后，所有经过该拦截器的接口都需要设置 Expose 或 Exclude
           // Expose 就是用来暴露的，Exclude 就是用来排除的

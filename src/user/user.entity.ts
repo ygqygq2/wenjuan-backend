@@ -1,4 +1,4 @@
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 import { Column, Entity, JoinTable, ManyToMany, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Logs } from '@/logs/logs.entity';
@@ -9,9 +9,11 @@ import { Profile } from './profile.entity';
 
 @Entity()
 export class User {
+  @Expose()
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Expose()
   @Column({ unique: true })
   username: string;
 
@@ -23,16 +25,20 @@ export class User {
   @Exclude()
   salt: string;
 
+  @Expose()
   @OneToMany(() => Logs, (logs) => logs.user, { cascade: true })
   logs: Logs[];
 
+  @Expose()
   @ManyToMany(() => Roles, (roles) => roles.users, { cascade: ['insert'] })
   @JoinTable({ name: 'user_roles' })
   roles: Roles[];
 
+  @Expose()
   @OneToOne(() => Profile, (profile) => profile.user, { cascade: true })
   profile: Profile;
 
+  @Expose()
   @OneToMany(() => Question, (question) => question.user)
   questions: Question[];
 

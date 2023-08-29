@@ -18,12 +18,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
+import { Serialize } from '@/decorators/serialize.decorator';
 import { TypeormFilter } from '@/filters/typeorm.filter';
 
 import { AdminGuard } from '@/guards';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { GetUserDto } from './dto/get-user.dto';
+import { ProfileResponseDto } from './dto/profile-response.dto';
 import { CreateUserPipe } from './pipes/create-user.pipe';
 import { User } from './user.entity';
 import { UserService } from './user.service';
@@ -79,6 +81,7 @@ export class UserController {
 
   // 不超过 3 个参数，建议直接使用类型管道
   @Get('/profile')
+  @Serialize(ProfileResponseDto)
   async getUserProfile(
     @Query('id', ParseIntPipe) id: any,
     // 这里 req 中的 user 是通过 AuthGuard('jwt') 中的 validate 方法返回的 PassportModule 来添加的

@@ -5,23 +5,24 @@ import { User } from './user.entity';
 
 @Entity()
 export class Profile {
-  @PrimaryGeneratedColumn()
   @Expose()
+  @PrimaryGeneratedColumn()
   id: number;
 
+  @Expose()
   @Column({ default: '' })
   nickname: string;
 
-  @Column({ default: 1 })
   @Expose()
+  @Column({ default: 1 })
   gender: number;
 
-  @Column({ default: '' })
   @Expose()
+  @Column({ default: '' })
   photo: string;
 
-  @Column({ default: '' })
   @Expose()
+  @Column({ default: '' })
   address: string;
 
   @OneToOne(() => User, { onDelete: 'CASCADE' })
