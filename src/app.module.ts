@@ -7,6 +7,7 @@ import * as Joi from 'joi';
 
 import { connectionParams } from '../ormconfig';
 
+import { AnswerModule } from './answer/answer.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
@@ -53,6 +54,7 @@ const envFilePath = `.env.${process.env.NODE_ENV || 'development'}`;
     MenusModule,
     QuestionModule,
     StatModule,
+    AnswerModule,
   ],
   controllers: [AppController],
   providers: [AppService, Logger, Reflector, { provide: 'APP_GUARD', useClass: JwtGuard }],

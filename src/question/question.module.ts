@@ -51,5 +51,6 @@ import { QuestionTitle } from './questionTitle.entity';
   ],
   controllers: [QuestionController],
   providers: [QuestionService],
+  exports: [QuestionService],
 })
 export class QuestionModule {}
