@@ -8,19 +8,14 @@ import { Role } from '@/enum/roles.enum';
 import { RolesGuard } from '@/guards';
 import { UserService } from '@/user/user.service';
 
+import { getUserInfoFromRequest } from '@/utils/common';
+
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionService } from './question.service';
 
 @Controller('question')
 export class QuestionController {
   constructor(private readonly questionService: QuestionService, private readonly userService: UserService) {}
-
-  private async getUserInfoFromRequest(request: any): Promise<{ userId: number; isAdmin: boolean }> {
-    const { userId } = request.user;
-    const user = await this.userService.findOne(userId);
-    const isAdmin = user.getRolesList().includes(Role.Admin);
-    return { userId, isAdmin };
-  }
 
   // 没有 question id 时
   @Post()
@@ -42,7 +37,7 @@ export class QuestionController {
   @Roles(Role.Admin, Role.User)
   @UseGuards(RolesGuard)
   async findAll(@Query() queryParams: any, @Req() request) {
-    const { userId, isAdmin } = await this.getUserInfoFromRequest(request);
+    const { userId, isAdmin } = await getUserInfoFromRequest(request, this.userService, true);
     return this.questionService.findAllForCreator(queryParams, userId, isAdmin);
   }
 
@@ -69,7 +64,7 @@ export class QuestionController {
   @Roles(Role.Admin, Role.User)
   @UseGuards(RolesGuard)
   async update(@Param('id') id: string, @Body() updateQuestionDto: UpdateQuestionDto, @Req() request) {
-    const { userId } = await this.getUserInfoFromRequest(request);
+    const { userId } = await getUserInfoFromRequest(request, this.userService, false);
     return this.questionService.saveQuestion(+id, updateQuestionDto, userId);
   }
 

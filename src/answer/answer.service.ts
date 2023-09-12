@@ -3,9 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
 
+import { Errno } from '@/enum/errno.enum';
 import { QuestionService } from '@/question/question.service';
 
 import { Answer } from './answer.entity';
+import { SearchOptions } from './types';
 
 @Injectable()
 export class AnswerService {
@@ -31,5 +33,54 @@ export class AnswerService {
     answer.answerContent = JSON.stringify(content);
 
     return this.answerRepository.save(answer);
+  }
+
+  async findAllForCreator(searchOptions: SearchOptions, userId: number) {
+    const { keyword, page = 1, pageSize = 10 } = searchOptions;
+
+    const queryBuilder = this.answerRepository.createQueryBuilder('answer');
+    queryBuilder.leftJoinAndSelect('answer.question', 'question');
+    queryBuilder.select([
+      'answer._id',
+      'question._id',
+      'answer.answerContent',
+      'answer.createdAt',
+      `COUNT (*) OVER() as total`, // 添加 total 字段，用于返回数据总数
+    ]);
+
+    // 设置 take 和 skip
+    const startIndex = (page - 1) * pageSize;
+    queryBuilder.take(pageSize).skip(startIndex);
+
+    // 用户查询自己的回答
+    queryBuilder.andWhere('answer.creator= :userId', { userId });
+
+    // keyword
+    if (keyword) {
+      queryBuilder.andWhere('answer.questionId like :keyword', { keyword: `%${keyword}%` });
+    }
+
+    // 根据需要添加其他查询条件
+    const result = await queryBuilder.getRawAndEntities();
+
+    const list = result.entities.map((entity) => {
+      // eslint-disable-next-line @typescript-eslint/naming-convention
+      const { _id, question, answerContent, createdAt } = entity;
+      const questionId = question._id;
+      return {
+        _id,
+        questionId,
+        answerContent,
+        createdAt,
+      };
+    });
+    const total = result.raw[0]?.total || 0;
+    return {
+      errno: Errno.SUCCESS,
+      data: {
+        list,
+        total,
+      },
+    };
   }
 }
