@@ -71,6 +71,7 @@ export class AnswerService {
         _id,
         questionId,
         answerContent,
+        creator: userId,
         createdAt,
       };
     });
