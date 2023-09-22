@@ -84,4 +84,14 @@ export class AnswerService {
       },
     };
   }
+
+  async findOne(id: number) {
+    const result = await this.answerRepository.findOne({
+      where: {
+        _id: id,
+      },
+      relations: ['question'],
+    });
+    return result;
+  }
 }
