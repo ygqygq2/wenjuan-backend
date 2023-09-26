@@ -6,6 +6,8 @@ import { Repository } from 'typeorm';
 import { Errno } from '@/enum/errno.enum';
 import { QuestionService } from '@/question/question.service';
 
+import { UserService } from '@/user/user.service';
+
 import { Answer } from './answer.entity';
 import { SearchOptions } from './types';
 
@@ -14,9 +16,10 @@ export class AnswerService {
   constructor(
     @InjectRepository(Answer) private readonly answerRepository: Repository<Answer>,
     private readonly questionService: QuestionService,
+    private readonly userService: UserService,
   ) {}
 
-  async createAnswer(body: any) {
+  async createAnswer(body: any, userId: number) {
     const { questionId, ...content } = body;
 
     if (!questionId) {
@@ -28,11 +31,14 @@ export class AnswerService {
       return null;
     }
 
-    const answer = new Answer();
-    answer.question = question;
-    answer.answerContent = JSON.stringify(content);
+    const user = await this.userService.findOne(userId);
+    if (!user) {
+      return null;
+    }
+    const answerTmp = new Answer();
+    Object.assign(answerTmp, { question, answerContent: JSON.stringify(content), user });
 
-    return this.answerRepository.save(answer);
+    return this.answerRepository.save(answerTmp);
   }
 
   async findAllForCreator(searchOptions: SearchOptions, userId: number) {

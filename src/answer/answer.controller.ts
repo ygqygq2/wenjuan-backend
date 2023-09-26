@@ -12,8 +12,9 @@ export class AnswerController {
   constructor(private readonly answerService: AnswerService, private readonly userService: UserService) {}
 
   @Post()
-  async index(@Body() body: any) {
-    const res = await this.answerService.createAnswer(body);
+  async index(@Body() body: any, @Req() request) {
+    const { userId } = await getUserInfoFromRequest(request, this.userService, false);
+    const res = await this.answerService.createAnswer(body, userId);
     if (!res) {
       return {
         errno: Errno.ERRNO_30,

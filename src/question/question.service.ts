@@ -352,8 +352,16 @@ export class QuestionService {
     componentList: Component[],
     userId: number,
   ) {
+    const user = await this.userService.findOne(userId);
+    if (!user) {
+      return this.generateReturnData({
+        errno: Errno.ERRNO_23,
+        msg: ErrMsg[Errno.ERRNO_23],
+      });
+    }
+
     const questionTmp = new Question();
-    Object.assign(questionTmp, { title, description, css, js, creator: userId });
+    Object.assign(questionTmp, { title, description, css, js, user });
 
     // componentList 转换成对象
     const questionComponentList = await this.createComponentList(questionTmp, componentList);
