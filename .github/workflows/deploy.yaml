@@ -84,4 +84,4 @@ jobs:
           envs: IMAGE,REGISTRY_USERNAME,REGISTRY_PASSWORD
           script: |
             echo "$REGISTRY_PASSWORD" | docker login ghcr.io -u "$REGISTRY_USERNAME" --password-stdin
-            cd /data/docker/wenjuan-client && docker-compose up -d
+            cd /data/docker/wenjuan-backend && docker-compose up -d
