@@ -2,11 +2,14 @@ import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
 import { CaslAbilityService } from '@/auth/casl-ability.service';
-import { CHECK_POLICIES_KEY, CaslHandlerType, PolicyHandlerCallback } from '@/decorators/casl.decorator';
+import { CaslHandlerType, CHECK_POLICIES_KEY, PolicyHandlerCallback } from '@/decorators/casl.decorator';
 
 @Injectable()
 export class CaslGuard implements CanActivate {
-  constructor(private reflector: Reflector, private caslAbilityService: CaslAbilityService) {}
+  constructor(
+    private reflector: Reflector,
+    private caslAbilityService: CaslAbilityService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const handlers = this.reflector.getAllAndMerge<PolicyHandlerCallback[]>(CHECK_POLICIES_KEY.HANDLER, [

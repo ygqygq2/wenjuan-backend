@@ -3,16 +3,16 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Inject,
   LoggerService,
   Param,
-  Headers,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
   UnauthorizedException,
   UseFilters,
-  ParseIntPipe,
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -20,7 +20,6 @@ import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
 import { Serialize } from '@/decorators/serialize.decorator';
 import { TypeormFilter } from '@/filters/typeorm.filter';
-
 import { AdminGuard } from '@/guards';
 
 import { CreateUserDto } from './dto/create-user.dto';

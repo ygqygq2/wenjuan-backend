@@ -1,11 +1,13 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, LoggerService } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
-
 import * as requestIp from 'request-ip';
 
 @Catch() // 不设置参数，默认捕获所有异常
 export class AllExceptionFilter implements ExceptionFilter {
-  constructor(private readonly logger: LoggerService, private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(
+    private readonly logger: LoggerService,
+    private readonly httpAdapterHost: HttpAdapterHost,
+  ) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const { httpAdapter } = this.httpAdapterHost;

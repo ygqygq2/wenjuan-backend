@@ -1,9 +1,7 @@
-import { join } from 'path';
-
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-
 import lineReader from 'line-reader';
+import { join } from 'path';
 import { DataSource, QueryRunner } from 'typeorm';
 
 import datasource from '../ormconfig';

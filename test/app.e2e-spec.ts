@@ -11,7 +11,6 @@ describe('AppController (e2e)', () => {
     spec = global.spec as Spec;
   });
 
-  // eslint-disable-next-line jest/expect-expect
   it('/api (GET)', () => {
     // return request(app.getHttpServer()).get('/api').expect(200).expect('Hello World!');
     // return pactum.spec.get('/api').expectStatus(200).expectBodyContains('Hello World!');

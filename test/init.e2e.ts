@@ -1,6 +1,5 @@
 import { readFileSync } from 'fs';
 import path from 'path';
-
 import { DataSource } from 'typeorm';
 
 import datasource from '../ormconfig';

@@ -1,9 +1,7 @@
 import { Global, Module } from '@nestjs/common';
-
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Logs } from '@/logs/logs.entity';
-
 import { Roles } from '@/roles/roles.entity';
 
 import { Profile } from './profile.entity';

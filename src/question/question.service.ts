@@ -4,18 +4,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import Redis from 'ioredis';
 import { cloneDeep } from 'lodash';
 import isEqual from 'lodash/isEqual';
-import { nanoid } from 'nanoid';
-
 import { Repository } from 'typeorm';
+import { v4 } from 'uuid';
 
 import {
   ComponentNumberToType,
+  componentOptionType,
   ComponentTypeNumber,
   ComponentTypeToNumber,
-  componentOptionType,
 } from '@/enum/componentType.enum';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
-
 import { RolesService } from '@/roles/roles.service';
 import { UserService } from '@/user/user.service';
 
@@ -59,23 +57,16 @@ export class QuestionService {
 
   constructor(
     @InjectRepository(Question) private readonly questionRepository: Repository<Question>,
-    // @ts-ignore
     @InjectRepository(QuestionCheckbox) private readonly questionCheckboxRepository: Repository<QuestionCheckbox>,
     @InjectRepository(QuestionCheckboxOption)
     private readonly questionCheckboxOptionRepository: Repository<QuestionCheckboxOption>,
-    // @ts-ignore
     @InjectRepository(QuestionInfo) private readonly questionInfoRepository: Repository<QuestionInfo>,
-    // @ts-ignore
     @InjectRepository(QuestionInput) private readonly questionInputRepository: Repository<QuestionInput>,
-    // @ts-ignore
     @InjectRepository(QuestionParagraph) private readonly questionParagraphRepository: Repository<QuestionParagraph>,
-    // @ts-ignore
     @InjectRepository(QuestionRadio) private readonly questionRadioRepository: Repository<QuestionRadio>,
     @InjectRepository(QuestionRadioOption)
     private readonly questionRadioOptionRepository: Repository<QuestionRadioOption>,
-    // @ts-ignore
     @InjectRepository(QuestionTextarea) private readonly questionTextareaRepository: Repository<QuestionTextarea>,
-    // @ts-ignore
     @InjectRepository(QuestionTitle) private readonly questionTitleRepository: Repository<QuestionTitle>,
     private readonly redisService: RedisService,
     private readonly userService: UserService,
@@ -128,7 +119,6 @@ export class QuestionService {
     const result = await queryBuilder.getRawAndEntities();
 
     const list = result.entities.map((entity) => {
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       const { _id, title, isPublished, isStar, answerCount, createdAt, isDeleted } = entity;
       return {
         _id,
@@ -192,7 +182,6 @@ export class QuestionService {
     const dbComponentList = this.getComponentList(question);
     const componentList = await Promise.all(
       dbComponentList.map(async (item: ComponentDB) => {
-        // eslint-disable-next-line @typescript-eslint/no-shadow
         const [id, type] = Object.entries(item)[0];
         const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<ComponentType>;
         const compResult: ComponentType = await componentRepository.findOne({
@@ -661,7 +650,7 @@ export class QuestionService {
     if (componentList !== undefined) {
       const oldComponentList: ComponentDB[] = question.componentList.reduce((acc, component) => {
         const componentObj = JSON.parse(component);
-        // eslint-disable-next-line @typescript-eslint/naming-convention
+
         const fe_id = Object.keys(componentObj)[0];
         const type = componentObj[fe_id];
         acc.push({ [fe_id]: type });
@@ -714,7 +703,6 @@ export class QuestionService {
     const dbComponentList = this.getComponentList(question);
     const copiedComponentList = await Promise.all(
       dbComponentList.map(async (item: ComponentDB) => {
-        // eslint-disable-next-line @typescript-eslint/no-shadow
         const [id, type] = Object.entries(item)[0];
         const componentRepository = this[`${ComponentNumberToType[type]}Repository`] as Repository<ComponentType>;
         const compResult: ComponentType = await componentRepository.findOne({
@@ -725,7 +713,7 @@ export class QuestionService {
         });
         // 复制组件，深拷贝
         const copiedComponent = cloneDeep(compResult);
-        const newFeId = nanoid(); // 使用 nanoid() 生成新的 fe_id 值
+        const newFeId = v4();
         copiedComponent.fe_id = newFeId;
         copiedComponent.question = newQuestion;
         if (copiedComponent instanceof QuestionCheckbox || copiedComponent instanceof QuestionRadio) {
@@ -855,7 +843,7 @@ export class QuestionService {
   async removeOptions(deleteComponent: ComponentHaveOptionType) {
     try {
       // 删除旧组件
-      // eslint-disable-next-line @typescript-eslint/naming-convention
+
       const { fe_id, type } = deleteComponent;
       const optionRepository = this[
         `${ComponentNumberToType[type]}OptionRepository`

@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 
 import { ErrMsg, Errno } from '@/enum/errno.enum';
-
 import { UserService } from '@/user/user.service';
 import { getUserInfoFromRequest } from '@/utils/common';
 
@@ -9,7 +8,10 @@ import { AnswerService } from './answer.service';
 
 @Controller('answer')
 export class AnswerController {
-  constructor(private readonly answerService: AnswerService, private readonly userService: UserService) {}
+  constructor(
+    private readonly answerService: AnswerService,
+    private readonly userService: UserService,
+  ) {}
 
   @Post()
   async index(@Body() body: any, @Req() request) {

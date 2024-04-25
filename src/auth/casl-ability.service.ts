@@ -11,7 +11,6 @@ export class CaslAbilityService {
   constructor(private userService: UserService) {}
 
   async forRoot(username: string) {
-    // eslint-disable-next-line @typescript-eslint/unbound-method
     const { can, build } = new AbilityBuilder(createMongoAbility);
 
     const user = await this.userService.find(username);
@@ -36,7 +35,7 @@ export class CaslAbilityService {
     // cannot('update', Logs);
 
     const ability = build({
-      detectSubjectType: (object) => object.constructor,
+      detectSubjectType: (object) => object.constructor.name,
     });
 
     return ability;

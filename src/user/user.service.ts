@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { conditionUtils } from 'src/utils/db.helper';
 import { In, Repository } from 'typeorm';
 
 import { Role } from '@/enum/roles.enum';
 import { Logs } from '@/logs/logs.entity';
-
 import { Roles } from '@/roles/roles.entity';
+import { conditionUtils } from '@/utils/db.helper';
 
 import { GetUserDto } from './dto/get-user.dto';
 import { Profile } from './profile.entity';

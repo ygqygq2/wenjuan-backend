@@ -5,7 +5,6 @@ import { Roles } from '@/roles/roles.entity';
 import { User } from '@/user/user.entity';
 import { UserService } from '@/user/user.service';
 
-// eslint-disable-next-line consistent-return
 export const getEntities = (path: string) => {
   // /users ->User, /logs -> Logs, /roles -> Roles, /menus -> Menus, /auth -> 'Auth'
   const map = {

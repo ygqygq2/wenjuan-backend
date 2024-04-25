@@ -2,12 +2,9 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuard
 
 import { Public, Roles } from '@/decorators';
 import { ErrMsg, Errno } from '@/enum/errno.enum';
-
 import { Role } from '@/enum/roles.enum';
-
 import { RolesGuard } from '@/guards';
 import { UserService } from '@/user/user.service';
-
 import { getUserInfoFromRequest } from '@/utils/common';
 
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -15,7 +12,10 @@ import { QuestionService } from './question.service';
 
 @Controller('question')
 export class QuestionController {
-  constructor(private readonly questionService: QuestionService, private readonly userService: UserService) {}
+  constructor(
+    private readonly questionService: QuestionService,
+    private readonly userService: UserService,
+  ) {}
 
   // 没有 question id 时
   @Post()

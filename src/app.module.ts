@@ -6,7 +6,6 @@ import * as dotenv from 'dotenv';
 import * as Joi from 'joi';
 
 import { connectionParams } from '../ormconfig';
-
 import { AnswerModule } from './answer/answer.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';

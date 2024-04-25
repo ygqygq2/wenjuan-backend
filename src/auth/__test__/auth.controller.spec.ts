@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { Roles } from '../../roles/roles.entity';
 import { User } from '../../user/user.entity';
-
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { SigninUserDto } from '../dto/signin-user.dto';

@@ -1,5 +1,4 @@
 import { Global, Module } from '@nestjs/common';
-
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { RolesController } from './roles.controller';

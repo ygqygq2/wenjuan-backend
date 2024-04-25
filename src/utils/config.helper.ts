@@ -1,6 +1,5 @@
-import * as fs from 'fs';
-
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
 // 通过环境变量读取不同的. env 文件
 export function getEnv(env: string): Record<string, unknown> {
   if (fs.existsSync(env)) {

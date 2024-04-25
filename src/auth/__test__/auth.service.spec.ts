@@ -1,7 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-
 import * as argon2 from 'argon2';
 
 import { User } from '@/user/user.entity';

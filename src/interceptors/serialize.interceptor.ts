@@ -1,4 +1,4 @@
-import { ExecutionContext, NestInterceptor, Injectable, CallHandler } from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { map, Observable } from 'rxjs';
 

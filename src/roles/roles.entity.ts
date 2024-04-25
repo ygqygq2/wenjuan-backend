@@ -1,5 +1,4 @@
 import { Expose } from 'class-transformer';
-
 import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 import { Menus } from '../menus/menus.entity';

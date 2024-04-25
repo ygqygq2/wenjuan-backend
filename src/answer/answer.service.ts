@@ -1,11 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { Repository } from 'typeorm';
 
 import { Errno } from '@/enum/errno.enum';
 import { QuestionService } from '@/question/question.service';
-
 import { UserService } from '@/user/user.service';
 
 import { Answer } from './answer.entity';
@@ -70,7 +68,6 @@ export class AnswerService {
     const result = await queryBuilder.getRawAndEntities();
 
     const list = result.entities.map((entity) => {
-      // eslint-disable-next-line @typescript-eslint/naming-convention
       const { _id, question, answerContent, createdAt } = entity;
       const questionId = question._id;
       return {

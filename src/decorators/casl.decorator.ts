@@ -1,8 +1,8 @@
 import { AnyMongoAbility, InferSubjects } from '@casl/ability';
 import { SetMetadata } from '@nestjs/common';
-import { Action } from 'src/enum/action.enum';
 
-// eslint-disable-next-line @typescript-eslint/naming-convention
+import { Action } from '@/enum/action.enum';
+
 export enum CHECK_POLICIES_KEY {
   HANDLER = 'CHECK_POLICIES_HANDLER',
   CAN = 'CHECK_POLICIES_CAN',
